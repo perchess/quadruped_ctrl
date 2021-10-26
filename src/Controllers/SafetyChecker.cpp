@@ -21,6 +21,8 @@ bool SafetyChecker<T>::checkSafeOrientation(StateEstimatorContainer<float>& _sta
   if (abs(_stateEstimator.getResult().rpy(0)) >= 0.5 ||
       abs(_stateEstimator.getResult().rpy(1)) >= 0.5) {
         printf("Orientation safety check failed!\n");
+        std::cout << "rpy 0 : " << _stateEstimator.getResult().rpy(0) << std::endl;
+        std::cout << "rpy 1 : " << _stateEstimator.getResult().rpy(1) << std::endl;
     return false;
   } else {
     return true;

@@ -27,22 +27,24 @@ struct JointEff {
 
 class GaitCtrller {
  public:
-  GaitCtrller(double freq, double* PIDParam);
+  GaitCtrller(double freq, std::vector<float>& ctrlParam);
   ~GaitCtrller();
   void SetIMUData(double* imuData);
   void SetLegData(double* motorData);
   void PreWork(double* imuData, double* motorData);
+  void PreWork(VectorNavData& imuData, LegData& motorData);
   void SetGaitType(int gaitType);
   void SetRobotMode(int mode);
-  void SetRobotVel(double* vel);
+  void SetRobotVel(double& x, double&y, double& z);
   void TorqueCalculator(double* imuData, double* motorData, double* effort);
+  Eigen::VectorXd TorqueCalculator(VectorNavData& imuData, LegData& motorData);
 
  private:
   int _gaitType = 0;
   int _robotMode = 0;
   bool _safetyCheck = true;
   std::vector<double> _gamepadCommand;
-  Vec4<float> ctrlParam;
+  std::vector<float> ctrlParam;
 
   Quadruped<float> _quadruped;
   FloatingBaseModel<float> _model;
@@ -60,42 +62,42 @@ class GaitCtrller {
   std::unique_ptr<SafetyChecker<float>> safetyChecker;
 };
 
-extern "C" {
+//extern "C" {
 
-GaitCtrller* gCtrller = NULL;
-JointEff jointEff;
+//GaitCtrller* gCtrller = NULL;
+//JointEff jointEff;
 
-// first step, init the controller
-void init_controller(double freq, double PIDParam[]) {
-  if (NULL != gCtrller) {
-    delete gCtrller;
-  }
-  gCtrller = new GaitCtrller(freq, PIDParam);
-}
+//// first step, init the controller
+////void init_controller(double freq, double PIDParam[]) {
+////  if (NULL != gCtrller) {
+////    delete gCtrller;
+////  }
+////  gCtrller = new GaitCtrller(freq, PIDParam);
+////}
 
-// the kalman filter need to work second
-void pre_work(double imuData[], double legData[]) {
-  gCtrller->PreWork(imuData, legData);
-}
+//// the kalman filter need to work second
+//void pre_work(double imuData[], double legData[]) {
+//  gCtrller->PreWork(imuData, legData);
+//}
 
-// gait type can be set in any time
-void set_gait_type(int gaitType) { gCtrller->SetGaitType(gaitType); }
+//// gait type can be set in any time
+//void set_gait_type(int gaitType) { gCtrller->SetGaitType(gaitType); }
 
-// set robot mode, 0: High performance model, 1: Low power mode
-void set_robot_mode(int mode) { gCtrller->SetRobotMode(mode); }
+//// set robot mode, 0: High performance model, 1: Low power mode
+//void set_robot_mode(int mode) { gCtrller->SetRobotMode(mode); }
 
-// robot vel can be set in any time
-void set_robot_vel(double vel[]) { gCtrller->SetRobotVel(vel); }
+//// robot vel can be set in any time
+//void set_robot_vel(double vel[]) { gCtrller->SetRobotVel(vel); }
 
-// after init controller and pre work, the mpc calculator can work
-JointEff* torque_calculator(double imuData[], double motorData[]) {
-  double eff[12] = {0.0};
-  gCtrller->TorqueCalculator(imuData, motorData, eff);
-  for (int i = 0; i < 12; i++) {
-    jointEff.eff[i] = eff[i];
-  }
-  return &jointEff;
-}
-}
+//// after init controller and pre work, the mpc calculator can work
+//JointEff* torque_calculator(double imuData[], double motorData[]) {
+//  double eff[12] = {0.0};
+//  gCtrller->TorqueCalculator(imuData, motorData, eff);
+//  for (int i = 0; i < 12; i++) {
+//    jointEff.eff[i] = eff[i];
+//  }
+//  return &jointEff;
+//}
+//}
 
 #endif

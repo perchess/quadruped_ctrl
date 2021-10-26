@@ -111,8 +111,8 @@ void LegController<T>::updateData(LegData* legData) {
  * Update the "leg command" for the SPIne board message
  */
 template <typename T>
-void LegController<T>::updateCommand(LegCommand* legCommand,
-                                     Vec4<T>& crtlParam) {
+void LegController<T>::updateCommand(LegCommand* legCommand, std::vector<T>& crtlParam)
+{
   for (int leg = 0; leg < 4; leg++) {
     // tauFF 获得从控制器来的力矩
     Vec3<T> legTorque = commands[leg].tauFeedForward;
@@ -134,24 +134,24 @@ void LegController<T>::updateCommand(LegCommand* legCommand,
     computeLegIK(_quadruped, commands[leg].pDes, &(commands[leg].qDes), leg);
     if (leg == 1 || leg == 3) {
       legCommand->tau_abad_ff[leg] =
-          1*crtlParam(2) * (0.0 - datas[leg].q(0)) -
-          1*crtlParam(3) * datas[leg].qd(0) + legTorque(0);
+          1*crtlParam.at(2) * (0.0 - datas[leg].q(0)) -
+          1*crtlParam.at(3) * datas[leg].qd(0) + legTorque(0);
       legCommand->tau_hip_ff[leg] =
-          1*crtlParam(2) * (0.0 - datas[leg].q(1)) -
-          1*crtlParam(3) * datas[leg].qd(1) + legTorque(1);
+          1*crtlParam.at(2) * (0.0 - datas[leg].q(1)) -
+          1*crtlParam.at(3) * datas[leg].qd(1) + legTorque(1);
       legCommand->tau_knee_ff[leg] =
-          1*crtlParam(2) * (0.0 - datas[leg].q(2)) -
-          1*crtlParam(3) * datas[leg].qd(2) + legTorque(2);
+          1*crtlParam.at(2) * (0.0 - datas[leg].q(2)) -
+          1*crtlParam.at(3) * datas[leg].qd(2) + legTorque(2);
     } else {
       legCommand->tau_abad_ff[leg] =
-          crtlParam(2) * (0.0 - datas[leg].q(0)) -
-          crtlParam(3) * datas[leg].qd(0) + legTorque(0);
+          crtlParam.at(2) * (0.0 - datas[leg].q(0)) -
+          crtlParam.at(3) * datas[leg].qd(0) + legTorque(0);
       legCommand->tau_hip_ff[leg] =
-          crtlParam(2) * (0.0 - datas[leg].q(1)) -
-          crtlParam(3) * datas[leg].qd(1) + legTorque(1);
+          crtlParam.at(2) * (0.0 - datas[leg].q(1)) -
+          crtlParam.at(3) * datas[leg].qd(1) + legTorque(1);
       legCommand->tau_knee_ff[leg] =
-          crtlParam(2) * (0.0 - datas[leg].q(2)) -
-          crtlParam(3) * datas[leg].qd(2) + legTorque(2);
+          crtlParam.at(2) * (0.0 - datas[leg].q(2)) -
+          crtlParam.at(3) * datas[leg].qd(2) + legTorque(2);
     }
 
     // std::ofstream fp;

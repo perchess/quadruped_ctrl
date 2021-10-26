@@ -3,7 +3,7 @@ project(quadruped_ctrl)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -Werror -Wall -Wextra" CACHE STRING "" FORCE)
 set(CMAKE_BUILD_TYPE "Release")
-
+message("WARNING !!!! Debug IS SLOVER")
 find_package (Eigen3 REQUIRED)
 
 find_package(catkin REQUIRED
@@ -38,8 +38,8 @@ generate_messages(
 ###################################
 
 catkin_package(
-  INCLUDE_DIRS
-  LIBRARIES
+  INCLUDE_DIRS src
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS
     std_msgs
     message_runtime
