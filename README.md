@@ -27,15 +27,6 @@ source devel/setup.bash
 pip3 install -r requirements.txt
 ```
 
-### Terrain
-you can modify the ```config/quadruped_ctrl_cinfig.yaml/terrain``` to deploy different terrains, there are four terrains supported in the simulator now, for example:
-```
-"plane"
-"stairs"
-"random1"
-"random2"
-"racetrack"
-```
 
 ### Running:
 run the gamepad node to control robot:
