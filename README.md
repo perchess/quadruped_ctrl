@@ -1,14 +1,12 @@
-# quadruped_robot
+# MIT convex MPC library
 
-### MIT mini cheetah simulation in pybullet
-MIT mini cheetah use customized simulator and lcm framework, which is not a popular way to do the robot development. Now, we extract the algorithm and do the simulation using ros and pybullet. This can be simple to deploy the system into different custom robot or plantform, and easy to learn the algorithm.
+### Based on [quadruped_ctrl](https://github.com/Derek-TH-Wang/quadruped_ctrl "Derek-TH-Wang's Repo") repo
+The package changed the types of arguments and edited the ros messages under the c++ format
 
-<img src="https://github.com/Derek-TH-Wang/quadruped_ctrl/blob/master/quadruped_balance.gif" alt="show" />
-<img src="https://github.com/Derek-TH-Wang/quadruped_ctrl/blob/master/vision.png" alt="show" />
-<img src="https://github.com/Derek-TH-Wang/quadruped_ctrl/blob/master/rviz.png" alt="show" />
+There will be a gif here
 
 ### System requirements:
-Ubuntu 18.04, ROS Melodic
+Ubuntu 20.04, ROS Melodic
 
 ### Dependency:
 use Logitech gamepad to control robot
