@@ -2,7 +2,7 @@
 
 GaitCtrller::GaitCtrller(double freq, std::vector<float>& ctrlParam)
   : ctrlParam(ctrlParam)
-  , _quadruped{ buildMiniCheetah<float>() }
+  , _quadruped{ buildUnitreeA1<float>() }
   , _model{ _quadruped.buildModel() }
   , convexMPC{ std::make_unique<ConvexMPCLocomotion>(1.0 / freq, 13) }
   , _legController{ std::make_unique<LegController<float>>(_quadruped) }
@@ -122,7 +122,8 @@ Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& m
     std::cout << "broken: Force FeedForward Safety Check FAIL" << std::endl;
 
   }else if (!safetyChecker->checkJointLimit(*_legController)) {
-    _safetyCheck = false;
+    _safetyCheck = true;
+    ROS_WARN_STREAM(ros::this_node::getName() + " : IGNORED JOINT LIMIT CHECK!!!");
     std::cout << "broken: Joint Limit Safety Check FAIL" << std::endl;
   }
 
@@ -200,4 +201,12 @@ void GaitCtrller::TorqueCalculator(double* imuData, double* motorData,
   }
 
   // return effort;
+}
+
+void GaitCtrller::jump(bool trigger)
+{
+  if (trigger)
+  {
+    _desiredStateCommand->trigger_pressed = true;
+  }
 }

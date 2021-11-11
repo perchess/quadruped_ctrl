@@ -36,7 +36,8 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(float _dt, int _iterations_between_mpc)
       trotRunning(horizonLength, Vec4<int>(0, 7, 7, 0), Vec4<int>(6, 6, 6, 6), "Trot Running"),
       walking(horizonLength, Vec4<int>(0, horizonLength/2.0, horizonLength/4.0, 3.0*horizonLength/4.0),
       Vec4<int>(3.0*horizonLength/4.0,3.0*horizonLength/4.0,3.0*horizonLength/4.0,3.0*horizonLength/4.0), "Walking"),
-      walking2(horizonLength, Vec4<int>(0, 7, 7, 0), Vec4<int>(10, 10, 10, 10), "Walking2"),
+      walking2(horizonLength, Vec4<int>(0, 5, 5, 0),
+               Vec4<int>(5, 5, 5, 5), "Walking2"),
       pacing(horizonLength, Vec4<int>(7, 0, 7, 0), Vec4<int>(7, 7, 7, 7), "Pacing"),
       aio(horizonLength, Vec4<int>(0, 0, 0, 0), Vec4<int>(14, 14, 14, 14), "aio") {
   dtMPC = dt * iterationsBetweenMPC;  // 0.03
@@ -731,8 +732,9 @@ void ConvexMPCLocomotion::solveSparseMPC(
 
 void ConvexMPCLocomotion::initSparseMPC() {
   Mat3<double> baseInertia;
-  baseInertia << 0.07, 0, 0, 0, 0.26, 0, 0, 0, 0.242;
-  double mass = 9;
+  baseInertia << 0.0158533, 0, 0, 0, 0.0377999, 0, 0, 0, 0.0456542;
+  double mass = 13.741;
+  // Ограничение по максимальной силе (проекция на ось Z)
   double maxForce = 120;
 
   std::vector<double> dtTraj;

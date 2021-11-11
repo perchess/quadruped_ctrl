@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <ros/ros.h>
 
 #include "Controllers/ContactEstimator.h"
 #include "Controllers/ControlFSMData.h"
@@ -17,6 +18,7 @@
 #include "Controllers/StateEstimatorContainer.h"
 #include "Controllers/SafetyChecker.h"
 #include "Dynamics/MiniCheetah.h"
+#include "Dynamics/unitree_a1.h"
 #include "MPC_Ctrl/ConvexMPCLocomotion.h"
 #include "Utilities/IMUTypes.h"
 #include "calculateTool.h"
@@ -37,6 +39,7 @@ class GaitCtrller {
   void SetRobotMode(int mode);
   void SetRobotVel(double& x, double&y, double& z);
   void TorqueCalculator(double* imuData, double* motorData, double* effort);
+  void jump(bool trigger);
   Eigen::VectorXd TorqueCalculator(VectorNavData& imuData, LegData& motorData);
 
  private:
