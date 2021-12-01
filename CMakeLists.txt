@@ -3,7 +3,10 @@ project(quadruped_ctrl)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -Werror -Wall -Wextra" CACHE STRING "" FORCE)
 set(CMAKE_BUILD_TYPE "Release")
-message("WARNING !!!! Debug IS SLOVER")
+if (CMAKE_BUILD_TYPE EQUAL "Debug")
+    message("WARNING !!!! Debug IS SLOVER")
+endif()
+
 find_package (Eigen3 REQUIRED)
 
 find_package(catkin REQUIRED
