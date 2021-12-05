@@ -1,6 +1,6 @@
 #include "GaitCtrller.h"
 
-GaitCtrller::GaitCtrller(double freq, std::vector<float>& ctrlParam)
+GaitCtrller::GaitCtrller(double freq, std::vector<float> ctrlParam)
   : ctrlParam(ctrlParam)
   , _quadruped{ buildUnitreeA1<float>() }
   , _model{ _quadruped.buildModel() }
@@ -103,7 +103,7 @@ Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& m
   // Setup the leg controller for a new iteration
   _legController->zeroCommand();
   _legController->setEnabled(true);
-  _legController->setMaxTorqueCheetah3(208.5);
+//  _legController->setMaxTorqueCheetah3(208.5);
 
   // Find the desired state trajectory
   _desiredStateCommand->convertToStateCommands(_gamepadCommand);
@@ -130,7 +130,7 @@ Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& m
   convexMPC->run(_quadruped, *_legController, *_stateEstimator,
                  *_desiredStateCommand, _gamepadCommand, _gaitType, _robotMode);
 
-  _legController->updateCommand(&legcommand, ctrlParam);
+  _legController->updateCommand(&legcommand);
 
   Eigen::VectorXd effort = VectorXd::Zero(12);
 
@@ -184,7 +184,7 @@ void GaitCtrller::TorqueCalculator(double* imuData, double* motorData,
   convexMPC->run(_quadruped, *_legController, *_stateEstimator,
                  *_desiredStateCommand, _gamepadCommand, _gaitType, _robotMode);
 
-  _legController->updateCommand(&legcommand, ctrlParam);
+  _legController->updateCommand(&legcommand);
 
   if(_safetyCheck) {
     for (int i = 0; i < 4; i++) {
@@ -209,4 +209,12 @@ void GaitCtrller::jump(bool trigger)
   {
     _desiredStateCommand->trigger_pressed = true;
   }
+}
+
+void GaitCtrller::SetLegParams(PDcoeffs coefs)
+{
+  ctrlParam[0] = coefs.kpCartesian;
+  ctrlParam[1] = coefs.kdCartesian;
+  ctrlParam[2] = coefs.kpJoint;
+  ctrlParam[3] = coefs.kdJoint;
 }

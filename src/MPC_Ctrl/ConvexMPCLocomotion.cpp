@@ -87,7 +87,7 @@ void ConvexMPCLocomotion::_SetupCommand(
   y_vel_cmd = gamepadCommand[1];
   yaw_vel_cmd = gamepadCommand[2];
 
-  _x_vel_des = _x_vel_des * (1 - x_filter) + x_vel_cmd * x_filter;  //一阶低通数字滤波
+  _x_vel_des = _x_vel_des * (1 - x_filter) + x_vel_cmd * x_filter;  //Фильтрация
   _y_vel_des = _y_vel_des * (1 - y_filter) + y_vel_cmd * y_filter;
   _yaw_turn_rate = _yaw_turn_rate * (1 - yaw_filter) + yaw_vel_cmd * yaw_filter;
   if(_x_vel_des > 2.0) {
@@ -101,9 +101,9 @@ void ConvexMPCLocomotion::_SetupCommand(
     _y_vel_des = -0.6;
   }
   _yaw_des = _stateEstimator.getResult().rpy[2] +
-             dt * _yaw_turn_rate;  //涉及到了状态估计中的欧拉角
+             dt * _yaw_turn_rate;  // желаемый угол рысканья для оценки положения
 
-  //确保机器人不会因为摩擦力的原因在yaw方向产生旋转误差
+  // Если большая ошибка по углу рыскания, сбрасываем
   if((abs(_stateEstimator.getResult().rpy[2] - _yaw_des_true) > 5.0)){
     // _yaw_des_true = 3.14 * _stateEstimator.getResult().rpy[2] / abs(_stateEstimator.getResult().rpy[2]);
     _yaw_des_true = _stateEstimator.getResult().rpy[2];

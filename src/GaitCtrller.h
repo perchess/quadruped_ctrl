@@ -27,9 +27,29 @@ struct JointEff {
   double eff[12];
 };
 
+/*!
+ * @brief Структура для хранения параметров регуляторов
+ * @param kpCartesian : пропорциональный коеффициент для перемещения в декардовом пространстве
+ * @param kdCartesian : дифференциальный коеффициент для перемещения в декардовом пространстве
+ * @param kpJoint : пропорциональный коеффициент для перемещения в конфигурационном пространстве
+ * @param kdJoint : дифференциальный коеффициент для перемещения в конфигурационном пространстве
+ */
+struct PDcoeffs {
+  PDcoeffs(float kpCartesian, float kdCartesian, float kpJoint, float kdJoint)
+    : kpCartesian(kpCartesian)
+    , kdCartesian(kdCartesian)
+    , kpJoint(kpJoint)
+    , kdJoint(kdJoint)
+  {}
+  float kpCartesian;
+  float kdCartesian;
+  float kpJoint;
+  float kdJoint;
+};
+
 class GaitCtrller {
  public:
-  GaitCtrller(double freq, std::vector<float>& ctrlParam);
+  GaitCtrller(double freq, std::vector<float> ctrlParam);
   ~GaitCtrller();
   void SetIMUData(double* imuData);
   void SetLegData(double* motorData);
@@ -38,6 +58,7 @@ class GaitCtrller {
   void SetGaitType(int gaitType);
   void SetRobotMode(int mode);
   void SetRobotVel(double& x, double&y, double& z);
+  void SetLegParams(PDcoeffs coefs);
   void TorqueCalculator(double* imuData, double* motorData, double* effort);
   void jump(bool trigger);
   Eigen::VectorXd TorqueCalculator(VectorNavData& imuData, LegData& motorData);

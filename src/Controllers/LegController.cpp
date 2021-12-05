@@ -88,21 +88,21 @@ void LegController<T>::edampCommand(RobotType robot, T gain) {
 template <typename T>
 void LegController<T>::updateData(LegData* legData) {
   for (size_t leg = 0; leg < 4; leg++) {
-    // q: 关节角
+    // q:
     datas[leg].q(0) = legData->q_abad[leg];
     datas[leg].q(1) = legData->q_hip[leg];
     datas[leg].q(2) = legData->q_knee[leg];
 
-    // qd 关节角速度？
+    // qd:
     datas[leg].qd(0) = legData->qd_abad[leg];
     datas[leg].qd(1) = legData->qd_hip[leg];
     datas[leg].qd(2) = legData->qd_knee[leg];
 
-    // J and p 雅可比和足端位置
+    // J and position
     computeLegJacobianAndPosition<T>(_quadruped, datas[leg].q, &(datas[leg].J),
                                      &(datas[leg].p), leg);
 
-    // v 足端速度
+    // v linear
     datas[leg].v = datas[leg].J * datas[leg].qd;
   }
 }
@@ -111,80 +111,33 @@ void LegController<T>::updateData(LegData* legData) {
  * Update the "leg command" for the SPIne board message
  */
 template <typename T>
-void LegController<T>::updateCommand(LegCommand* legCommand, std::vector<T>& crtlParam)
+void LegController<T>::updateCommand(LegCommand* legCommand)
 {
   for (int leg = 0; leg < 4; leg++) {
-    // tauFF 获得从控制器来的力矩
+    /// [tauFF] крутящий момент для лапы (прямая связь)
     Vec3<T> legTorque = commands[leg].tauFeedForward;
 
-    // forceFF 获得从控制器来的力矩
+    /// [forceFF] значение силы на конце лапы (прямая связь)
     Vec3<T> footForce = commands[leg].forceFeedForward;
-    // Vec3<T> footForce(0, 0, 10);
 
-    // cartesian PD 直角坐标下pd
+    /// [cartesian PD] коэффициенты регулятора (ПД) в декартовом пространстве
     footForce +=
         commands[leg].kpCartesian * (commands[leg].pDes - datas[leg].p);
     footForce +=
         commands[leg].kdCartesian * (commands[leg].vDes - datas[leg].v);
 
-    // Torque 足力转换成力矩
+    /// [Torque] приведение силы на конце лапы к крутящему момменту в двигателях
     legTorque += datas[leg].J.transpose() * footForce;
 
-    //计算期望关节角度
+    //计算期望关节角度 китайцы начали перекапывать ....
     computeLegIK(_quadruped, commands[leg].pDes, &(commands[leg].qDes), leg);
-    if (leg == 1 || leg == 3) {
-      legCommand->tau_abad_ff[leg] =
-          1*crtlParam.at(2) * (0.0 - datas[leg].q(0)) -
-          1*crtlParam.at(3) * datas[leg].qd(0) + legTorque(0);
-      legCommand->tau_hip_ff[leg] =
-          1*crtlParam.at(2) * (0.0 - datas[leg].q(1)) -
-          1*crtlParam.at(3) * datas[leg].qd(1) + legTorque(1);
-      legCommand->tau_knee_ff[leg] =
-          1*crtlParam.at(2) * (0.0 - datas[leg].q(2)) -
-          1*crtlParam.at(3) * datas[leg].qd(2) + legTorque(2);
-    } else {
-      legCommand->tau_abad_ff[leg] =
-          crtlParam.at(2) * (0.0 - datas[leg].q(0)) -
-          crtlParam.at(3) * datas[leg].qd(0) + legTorque(0);
-      legCommand->tau_hip_ff[leg] =
-          crtlParam.at(2) * (0.0 - datas[leg].q(1)) -
-          crtlParam.at(3) * datas[leg].qd(1) + legTorque(1);
-      legCommand->tau_knee_ff[leg] =
-          crtlParam.at(2) * (0.0 - datas[leg].q(2)) -
-          crtlParam.at(3) * datas[leg].qd(2) + legTorque(2);
-    }
 
-    // std::ofstream fp;
-    // fp.open("position.txt", std::ofstream::app);
-    // if(!fp){
-    //   std::ofstream fpout("position.txt");
-    //   fpout << commands[0].pDes(0) << "," << commands[0].pDes(1) << "," <<
-    //   commands[0].pDes(2) << "," << commands[1].pDes(0) << "," <<
-    //   commands[1].pDes(1) << "," << commands[1].pDes(2) << ","; fp.close();
-    //   fpout.close();
-    // }else{
-    //   fp << commands[0].pDes(0) << "," << commands[0].pDes(1) << "," <<
-    //   commands[0].pDes(2) << "," << commands[1].pDes(0) << "," <<
-    //   commands[1].pDes(1) << "," << commands[1].pDes(2) << std::endl;
-    //   fp.close();
-    // }
+      legCommand->tau_abad_ff[leg] = legTorque(0);
+      legCommand->tau_hip_ff[leg] = legTorque(1);
+      legCommand->tau_knee_ff[leg] = legTorque(2);
 
-    // legCommand->flags[leg] = _legsEnabled ? 1 : 0;
+      legCommand->flags[leg] = _legsEnabled ? 1 : 0;
   }
-
-  flags = flags + 1;
-
-  // std::cout << "mpc force = " << std::endl;
-  // for(int leg = 0; leg<4; leg++) {
-  //   std::cout << commands[leg].forceFeedForward.transpose() << " ";
-  // }
-  // std::cout << std::endl;
-
-  // std::cout << "pDes = " << std::endl;
-  // for(int leg = 0; leg<4; leg++) {
-  //   std::cout << commands[leg].pDes.transpose() << " ";
-  // }
-  // std::cout << std::endl;
 }
 
 template struct LegControllerCommand<double>;

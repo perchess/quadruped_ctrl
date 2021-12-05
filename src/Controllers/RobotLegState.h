@@ -30,6 +30,7 @@ struct LegData {
   float qd_knee[4];
 };
 
+/// Копия SpiCommand из оригинального репозитория (SpineBoard.h)
 struct LegCommand {
   float q_des_abad[4];
   float q_des_hip[4];
@@ -51,6 +52,8 @@ struct LegCommand {
   float tau_hip_ff[4];
   float tau_knee_ff[4];
 
+  // Флаги для платы SpineBoard.
+  // Влияют на ограничение крутящего момента и мб еще на что-то
   int32_t flags[4];
 
 };
