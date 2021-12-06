@@ -22,6 +22,7 @@
 #include "MPC_Ctrl/ConvexMPCLocomotion.h"
 #include "Utilities/IMUTypes.h"
 #include "calculateTool.h"
+#include <quadruped_msgs/generalConfig.h>
 
 struct JointEff {
   double eff[12];
@@ -61,6 +62,7 @@ class GaitCtrller {
   void SetLegParams(PDcoeffs coefs);
   void TorqueCalculator(double* imuData, double* motorData, double* effort);
   void jump(bool trigger);
+  void updateConfig(quadruped_msgs::generalConfig& cfg);
   Eigen::VectorXd TorqueCalculator(VectorNavData& imuData, LegData& motorData);
 
  private:
@@ -84,6 +86,7 @@ class GaitCtrller {
   std::unique_ptr<RobotControlParameters> controlParameters;
   std::unique_ptr<DesiredStateCommand<float>> _desiredStateCommand;
   std::unique_ptr<SafetyChecker<float>> safetyChecker;
+  quadruped_msgs::generalConfig config_;
 };
 
 //extern "C" {

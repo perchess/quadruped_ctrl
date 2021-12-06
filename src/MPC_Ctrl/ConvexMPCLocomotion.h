@@ -88,6 +88,8 @@ public:
 
   ConvexMPCLocomotion(float _dt, int _iterations_between_mpc);
   void initialize();
+  void setPDcoefs(Mat3<float>& kp_cartesian, Mat3<float>& kd_cartesian)
+  {Kp = kp_cartesian; Kd = kd_cartesian;}
 
   template<typename T>
   void run(Quadruped<T> &_quadruped, LegController<T> &_legController, StateEstimatorContainer<float> &_stateEstimator,

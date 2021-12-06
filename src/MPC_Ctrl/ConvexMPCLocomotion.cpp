@@ -61,6 +61,13 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(float _dt, int _iterations_between_mpc)
   vBody_des.setZero();
   aBody_des.setZero();
   for (int i = 0; i < 4; i++) f_ff[i].setZero();
+
+  // load LCM leg swing gains
+  Kp << 700, 0, 0, 0, 700, 0, 0, 0, 200;
+  Kp_stance = 0.0 * Kp;
+
+  Kd << 10, 0, 0, 0, 10, 0, 0, 0, 10;
+  Kd_stance = 1.0 * Kd;
 }
 
 void ConvexMPCLocomotion::initialize() {
@@ -375,12 +382,12 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
   // calc gait
   iterationCounter++;
 
-  // load LCM leg swing gains
-  Kp << 700, 0, 0, 0, 700, 0, 0, 0, 200;
-  Kp_stance = 0.0 * Kp;
+//  // load LCM leg swing gains
+//  Kp << 700, 0, 0, 0, 700, 0, 0, 0, 200;
+//  Kp_stance = 0.0 * Kp;
 
-  Kd << 10, 0, 0, 0, 10, 0, 0, 0, 10;
-  Kd_stance = 1.0 * Kd;
+//  Kd << 10, 0, 0, 0, 10, 0, 0, 0, 10;
+//  Kd_stance = 1.0 * Kd;
   // gait
   Vec4<float> contactStates = gait->getContactState();
   Vec4<float> swingStates = gait->getSwingState();

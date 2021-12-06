@@ -218,3 +218,36 @@ void GaitCtrller::SetLegParams(PDcoeffs coefs)
   ctrlParam[2] = coefs.kpJoint;
   ctrlParam[3] = coefs.kdJoint;
 }
+
+void GaitCtrller::updateConfig(quadruped_msgs::generalConfig& cfg)
+{
+  config_ = cfg;
+  // Коэффициенты для ног
+  Mat3<float> kp;
+  Mat3<float> kd;
+  kp <<   config_.kp_cartesian_x, 0, 0,
+          0, config_.kp_cartesian_y, 0,
+          0, 0, config_.kp_cartesian_z;
+  kd <<   config_.kd_cartesian_x, 0, 0,
+          0, config_.kd_cartesian_y, 0,
+          0, 0, config_.kd_cartesian_z;
+  convexMPC->setPDcoefs(kp, kd);
+  // Коэффициенты для сочленений
+  for (size_t leg = 0; leg < 4; leg++)
+  {
+    _legController->commands[leg].kpJoint <<
+        config_.kp_joint_abad, 0, 0,
+        0, config_.kp_joint_hip, 0,
+        0, 0, config_.kp_joint_knee;
+    _legController->commands[leg].kdJoint <<
+        config_.kd_joint_abad, 0, 0,
+        0, config_.kd_joint_hip, 0,
+        0, 0, config_.kd_joint_knee;
+  }
+
+  // Установить походку
+  this->SetGaitType(cfg.gait);
+
+  // Включить другой режим питания (какая-то фича китайцев)
+  this->SetRobotMode(cfg.power_mode);
+}

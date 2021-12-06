@@ -10,11 +10,12 @@ endif()
 find_package (Eigen3 REQUIRED)
 
 find_package(catkin REQUIRED
-  COMPONENTS
     roscpp
     rospy
     std_msgs
     message_generation
+    quadruped_msgs
+    COMPONENTS
 )
 
 ################################################
@@ -48,6 +49,7 @@ catkin_package(
     std_msgs
     message_runtime
     geometry_msgs
+    quadruped_msgs
 )
 
 ###########
@@ -93,6 +95,8 @@ target_link_libraries(${PROJECT_NAME}
   qpOASES
   osqp
 )
+
+add_dependencies(${PROJECT_NAME} quadruped_msgs_gencfg)
 
 #############
 ## Install ##
