@@ -90,6 +90,11 @@ public:
   void initialize();
   void setPDcoefs(Mat3<float>& kp_cartesian, Mat3<float>& kd_cartesian)
   {Kp = kp_cartesian; Kd = kd_cartesian;}
+  // Установить высоту робота: стандартную, при беге, при прыжках
+  void setBodyHeight(float h, std::string type);
+  CMPC_Result<float> getCCMPCResult()
+  {return result;}
+
 
   template<typename T>
   void run(Quadruped<T> &_quadruped, LegController<T> &_legController, StateEstimatorContainer<float> &_stateEstimator,
@@ -126,8 +131,8 @@ private:
   float _y_vel_des = 0.;
 
   // High speed running
-  //float _body_height = 0.34;
-  float _body_height = 0.29;
+  float _body_height = 0.34;
+//  float _body_height = 0.29;
 
   float _body_height_running = 0.29;
   float _body_height_jumping = 0.36;

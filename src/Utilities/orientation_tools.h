@@ -204,6 +204,7 @@ Vec3<typename T::Scalar> quatToRPY(const Eigen::MatrixBase<T>& q) {
   rpy(0) =
       std::atan2(2 * (q[2] * q[3] + q[0] * q[1]),
                  square(q[0]) - square(q[1]) - square(q[2]) + square(q[3]));
+//  std::cout << "MIT RPY : roll" << rpy(0) << " pitch: " << rpy(1) << " yaw: " << rpy(2) << std::endl;
   return rpy;
 }
 

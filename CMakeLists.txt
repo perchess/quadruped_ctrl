@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
     std_msgs
     message_generation
     quadruped_msgs
+    unitree_legged_msgs
     COMPONENTS
 )
 
@@ -50,6 +51,7 @@ catkin_package(
     message_runtime
     geometry_msgs
     quadruped_msgs
+    unitree_legged_msgs
 )
 
 ###########
@@ -58,7 +60,7 @@ catkin_package(
 
 include_directories(${catkin_INCLUDE_DIRS}
   include
-  include/${PROJECT_NAME}
+#  include/${PROJECT_NAME}
   ${Eigen3_INCLUDE_DIRS}
   src
 )

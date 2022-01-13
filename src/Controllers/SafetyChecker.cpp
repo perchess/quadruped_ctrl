@@ -20,9 +20,12 @@ template <typename T>
 bool SafetyChecker<T>::checkSafeOrientation(StateEstimatorContainer<float>& _stateEstimator) {
   if (abs(_stateEstimator.getResult().rpy(0)) >= 0.5 ||
       abs(_stateEstimator.getResult().rpy(1)) >= 0.5) {
-        printf("Orientation safety check failed!\n");
-        std::cout << "rpy 0 : " << _stateEstimator.getResult().rpy(0) << std::endl;
-        std::cout << "rpy 1 : " << _stateEstimator.getResult().rpy(1) << std::endl;
+        ROS_ERROR_ONCE("Orientation safety check failed!\n");
+        ROS_DEBUG("Orientation safety check failed!\n");
+        ROS_ERROR_STREAM_ONCE("rpy 0 : " << _stateEstimator.getResult().rpy(0));
+        ROS_ERROR_STREAM_ONCE("rpy 1 : " << _stateEstimator.getResult().rpy(1));
+//        std::cout << "rpy 0 : " << _stateEstimator.getResult().rpy(0) << std::endl;
+//        std::cout << "rpy 1 : " << _stateEstimator.getResult().rpy(1) << std::endl;
     return false;
   } else {
     return true;
@@ -129,39 +132,68 @@ template <typename T>
 bool SafetyChecker<T>::checkJointLimit(LegController<float>& _legController){
   bool safeJoint = true;
 
-  T max_ab_ad_angle = 1.0472;   //60 degree
-  T max_hip_angle = 0.174533;   //10 degree
-  T min_hip_angle = -1.8;  //-1.22173;    //-70 degree
-  T max_knee_angle = 2.79253;    //160 degree
-  T min_knee_angle = -0.174533;   //-10 degree
+  T max_ab_ad_angle = 0.802851;   // +-46 degree
+  T max_hip_angle = 1.047;   // 60
+  T min_hip_angle = -4.189;  // -240
+  T max_knee_angle = 2.61;    //150 degree
+  T min_knee_angle = 0.8727;   //50 degree
+//  T max_ab_ad_angle = 1.0472;   //60 degree
+//  T max_hip_angle = 0.174533;   //10 degree
+//  T min_hip_angle = -1.8;  //-1.22173;    //-70 degree
+//  T max_knee_angle = 2.79253;    //160 degree
+//  T min_knee_angle = -0.174533;   //-10 degree
 
   for (int leg = 0; leg < 4; leg++) {
     if(_legController.datas[leg].q(0) < -max_ab_ad_angle) {
+      ROS_ERROR_STREAM_ONCE("Joint limit error. joint: " << 0
+                            << " value: " << _legController.datas[leg].q(0) << " limit: " << -max_ab_ad_angle);
+//      std::cout << "Joint limit error. joint: " << 0
+//                << " value: " << _legController.datas[leg].q(0) << " limit: " << -max_ab_ad_angle << std::endl;
       _legController.datas[leg].q(0) = -max_ab_ad_angle;
       safeJoint = false;
     }
 
     if(_legController.datas[leg].q(0) > max_ab_ad_angle) {
+      ROS_ERROR_STREAM_ONCE("Joint limit error. joint: " << 0
+                            << " value: " << _legController.datas[leg].q(0) << " limit: " << max_ab_ad_angle);
+//      std::cout << "Joint limit error. joint: " << 0
+//                << " value: " << _legController.datas[leg].q(0) << " limit: " << max_ab_ad_angle << std::endl;
       _legController.datas[leg].q(0) = max_ab_ad_angle;
       safeJoint = false;
     }
 
     if(_legController.datas[leg].q(1) < min_hip_angle) {
+      ROS_ERROR_STREAM_ONCE("Joint limit error. joint: " << 1
+                            << " value: " << _legController.datas[leg].q(1) << " limit: " << min_hip_angle);
+//      std::cout << "Joint limit error. joint: " << 1
+//                << " value: " << _legController.datas[leg].q(1) << " limit: " << min_hip_angle << std::endl;
       _legController.datas[leg].q(1) = min_hip_angle;
       safeJoint = false;
     }
 
     if(_legController.datas[leg].q(1) > max_hip_angle) {
+      ROS_ERROR_STREAM_ONCE("Joint limit error. joint: " << 1
+                            << " value: " << _legController.datas[leg].q(1) << " limit: " << max_hip_angle);
+//      std::cout << "Joint limit error. joint: " << 1
+//                << " value: " << _legController.datas[leg].q(1) << " limit: " << max_hip_angle << std::endl;
       _legController.datas[leg].q(1) = max_hip_angle;
       safeJoint = false;
     }
 
     if(_legController.datas[leg].q(2) > max_knee_angle) {
+      ROS_ERROR_STREAM_ONCE("Joint limit error. joint: " << 2
+                            << " value: " << _legController.datas[leg].q(2) << " limit: " << max_knee_angle);
+//      std::cout << "Joint limit error. joint: " << 2
+//                << " value: " << _legController.datas[leg].q(2) << " limit: " << max_knee_angle << std::endl;
       _legController.datas[leg].q(2) = max_knee_angle;
       safeJoint = false;
     }
 
     if(_legController.datas[leg].q(2) < min_knee_angle) {
+      ROS_ERROR_STREAM_ONCE("Joint limit error. joint: " << 2
+                            << " value: " << _legController.datas[leg].q(2) << " limit: " << min_knee_angle);
+//      std::cout << "Joint limit error. joint: " << 2
+//                << " value: " << _legController.datas[leg].q(2) << " limit: " << min_knee_angle << std::endl;
       _legController.datas[leg].q(2) = min_knee_angle;
       safeJoint = false;
     }

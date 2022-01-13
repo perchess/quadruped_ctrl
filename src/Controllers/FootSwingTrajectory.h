@@ -9,6 +9,7 @@
 #define CHEETAH_SOFTWARE_FOOTSWINGTRAJECTORY_H
 
 #include "Utilities/cppTypes.h"
+#include "iostream"
 
 /*!
  * A foot swing trajectory for a single foot
@@ -79,6 +80,12 @@ public:
   Vec3<T> getAcceleration() {
     return _a;
   }
+  // Вывод дебаг информации полей
+  void print()
+  {
+    std::cout << "p0: " << _p0 << " pf: " << _pf << " height: " << _height << std::endl;
+  }
+
 
 private:
   Vec3<T> _p0, _pf, _p, _v, _a;

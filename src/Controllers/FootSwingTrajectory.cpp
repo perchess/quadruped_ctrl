@@ -15,6 +15,8 @@
  */
 template <typename T>
 void FootSwingTrajectory<T>::computeSwingTrajectoryBezier(T phase, T swingTime) {
+//#pragma message("Only for debug!!! P0 == pf")
+//  _pf = _p0;
   _p = Interpolate::cubicBezier<Vec3<T>>(_p0, _pf, phase);
   _v = Interpolate::cubicBezierFirstDerivative<Vec3<T>>(_p0, _pf, phase) / swingTime;
   _a = Interpolate::cubicBezierSecondDerivative<Vec3<T>>(_p0, _pf, phase) / (swingTime * swingTime);

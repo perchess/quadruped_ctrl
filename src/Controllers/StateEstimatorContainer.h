@@ -172,6 +172,10 @@ class StateEstimatorContainer {
     }
     _estimators.clear();
   }
+  GenericEstimator<T>* getEstimator(size_t num)
+  {
+    return _estimators.at(num);
+  }
 
   ~StateEstimatorContainer() {
     for (auto estimator : _estimators) {

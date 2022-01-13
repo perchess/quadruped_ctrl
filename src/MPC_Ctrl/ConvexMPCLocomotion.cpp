@@ -22,14 +22,14 @@
 
 ConvexMPCLocomotion::ConvexMPCLocomotion(float _dt, int _iterations_between_mpc)
     : iterationsBetweenMPC(_iterations_between_mpc),  //控制频率用  15
-      horizonLength(14),
+      horizonLength(10),
       dt(_dt),  // 0.002
       trotting(horizonLength, Vec4<int>(0, horizonLength/2.0, horizonLength/2.0, 0),
       Vec4<int>(horizonLength/2.0, horizonLength/2.0, horizonLength/2.0, horizonLength/2.0), "Trotting"),
-      bounding(horizonLength, Vec4<int>(7, 7, 0, 0), Vec4<int>(6, 6, 6, 6), "Bounding"),
+      bounding(horizonLength, Vec4<int>(horizonLength/2.0, horizonLength/2.0, 0, 0), Vec4<int>(horizonLength/2.0 - 1.0, horizonLength/2.0 - 1.0, horizonLength/2.0 - 1.0, horizonLength/2.0 - 1.0), "Bounding"),
       // bounding(horizonLength,
       // Vec4<int>(5,5,0,0),Vec4<int>(3,3,3,3),"Bounding"),
-      pronking(horizonLength, Vec4<int>(0, 0, 0, 0), Vec4<int>(6, 6, 6, 6), "Pronking"),
+      pronking(horizonLength, Vec4<int>(0, 0, 0, 0), Vec4<int>(horizonLength/2.0 - 1.0, horizonLength/2.0 - 1.0, horizonLength/2.0 - 1.0, horizonLength/2.0 - 1.0), "Pronking"),
       jumping(horizonLength, Vec4<int>(0, 0, 0, 0), Vec4<int>(3, 3, 3, 3), "Jumping"),
       galloping(horizonLength, Vec4<int>(0, 4, 7, 11), Vec4<int>(7, 7, 7, 7), "Galloping"),
       standing( horizonLength, Vec4<int>(0, 0, 0, 0),  Vec4<int>(14, 14, 14, 14), "Standing"),
@@ -62,12 +62,15 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(float _dt, int _iterations_between_mpc)
   aBody_des.setZero();
   for (int i = 0; i < 4; i++) f_ff[i].setZero();
 
-  // load LCM leg swing gains
-  Kp << 700, 0, 0, 0, 700, 0, 0, 0, 200;
+  /*
+   * Параметры регуляторов по умолчанию.
+   * Инициализируются в конструкторе, изменяются методом setPDcoefs
+   * */
+  Kp << 700, 0, 0, 0, 700, 0, 0, 0, 500;
   Kp_stance = 0.0 * Kp;
 
-  Kd << 10, 0, 0, 0, 10, 0, 0, 0, 10;
-  Kd_stance = 1.0 * Kd;
+  Kd << 30, 0, 0, 0, 30, 0, 0, 0, 30;
+  Kd_stance  << 2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5;
 }
 
 void ConvexMPCLocomotion::initialize() {
@@ -295,7 +298,7 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
 
     for (int i = 0; i < 4; i++)  //足底摆动轨迹
     {
-      footSwingTrajectories[i].setHeight(0.06);
+      footSwingTrajectories[i].setHeight(0.09);
       footSwingTrajectories[i].setInitialPosition(pFoot[i]);  // set p0
       footSwingTrajectories[i].setFinalPosition(pFoot[i]);    // set pf
     }
@@ -322,7 +325,7 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
       swingTimeRemaining[i] -= dt;
     }
 
-    footSwingTrajectories[i].setHeight(0.06);
+    footSwingTrajectories[i].setHeight(0.09);
     Vec3<float> offset(0, side_sign[i] * .065, 0);
 
     Vec3<float> pRobotFrame = (_quadruped.getHipLocation(i) +
@@ -408,6 +411,7 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
         firstSwing[foot] = false;
         footSwingTrajectories[foot].setInitialPosition(pFoot[foot]);
       }
+//      footSwingTrajectories[0].print();
 
       footSwingTrajectories[foot].computeSwingTrajectoryBezier(
           swingState, swingTimes[foot]);
@@ -428,8 +432,20 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
       vFoot_des[foot] = vDesFootWorld;
       aFoot_des[foot] = footSwingTrajectories[foot].getAcceleration();
 
+//      if (foot == 0 || foot == 2) // правая сторона
+//      {
+//        pDesLeg(1) = - 0.1;
+//        vDesLeg(1) = 0.0;
+//      }
+//      if (foot == 1 || foot == 3) // левая сторона
+//      {
+//        pDesLeg(1) = 0.1;
+//        vDesLeg(1) = 0.0;
+//      }
+
       if (!use_wbc) {
         // Update leg control command regardless of the usage of WBIC
+
         _legController.commands[foot].pDes = pDesLeg;
         _legController.commands[foot].vDes = vDesLeg;
         if (foot == 1 || foot == 3) {
@@ -440,7 +456,8 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
           _legController.commands[foot].kdCartesian = 1*Kd;
         }
       }
-    } else  // foot is in stance
+    }
+    else  // foot is in stance
     {
       firstSwing[foot] = true;
 
@@ -450,6 +467,17 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
           seResult.rBody * (pDesFootWorld - seResult.position) -
           _quadruped.getHipLocation(foot);
       Vec3<float> vDesLeg = seResult.rBody * (vDesFootWorld - seResult.vWorld);
+
+//      if (foot == 0 || foot == 2) // правая сторона
+//      {
+//        pDesLeg(1) = - 0.1;
+//        vDesLeg(1) = 0.0;
+//      }
+//      if (foot == 1 || foot == 3) // левая сторона
+//      {
+//        pDesLeg(1) = 0.1;
+//        vDesLeg(1) = 0.0;
+//      }
 
       if (!use_wbc) {
         _legController.commands[foot].pDes = pDesLeg;
@@ -759,4 +787,19 @@ void ConvexMPCLocomotion::initSparseMPC() {
   _sparseCMPC.setDtTrajectory(dtTraj);
 
   _sparseTrajectory.resize(horizonLength);
+}
+
+void ConvexMPCLocomotion::setBodyHeight(float h, std::string type)
+{
+  if (type.empty())
+  {
+    std::cout << " [ConvexMPCLocomotion]: Get empty body height type,"
+                 " Should be : (default, run or jump) " << std::endl;
+  }
+  if (type == "default")
+    _body_height = h;
+  if (type == "run")
+    _body_height_running = h;
+  if (type == "jump")
+    _body_height_jumping = h;
 }

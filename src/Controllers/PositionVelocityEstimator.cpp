@@ -10,7 +10,7 @@
 #include "Controllers/PositionVelocityEstimator.h"
 
 #include <fstream>
-
+//#define DEBUG
 /*!
  * Initialize the state estimator
  */
@@ -211,13 +211,14 @@ void LinearKFPositionVelocityEstimator<T>::run() {
   this->_stateEstimatorData.result->vBody =
       this->_stateEstimatorData.result->rBody *
       this->_stateEstimatorData.result->vWorld;
-
-  // std::cout << "pos = " <<
-  // this->_stateEstimatorData.result->position.transpose() << std::endl;
-  // std::cout << "vWorld = " <<
-  // this->_stateEstimatorData.result->vWorld.transpose() << std::endl;
-  // std::cout << "vBody = " <<
-  // this->_stateEstimatorData.result->vBody.transpose() << std::endl;
+#ifdef DEBUG
+   std::cout << "pos = " <<
+   this->_stateEstimatorData.result->position.transpose() << std::endl;
+   std::cout << "vWorld = " <<
+   this->_stateEstimatorData.result->vWorld.transpose() << std::endl;
+   std::cout << "vBody = " <<
+   this->_stateEstimatorData.result->vBody.transpose() << std::endl;
+#endif
 }
 
 template class LinearKFPositionVelocityEstimator<float>;

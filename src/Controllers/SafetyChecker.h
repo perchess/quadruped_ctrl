@@ -6,6 +6,7 @@
 #include "StateEstimatorContainer.h"
 #include "LegController.h"
 #include "Dynamics/Quadruped.h"
+#include "ros/ros.h"
 
 /**
  * The SafetyChecker handles the checks requested by the ControlFSM.

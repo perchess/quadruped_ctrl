@@ -23,6 +23,11 @@
 #include "Utilities/IMUTypes.h"
 #include "calculateTool.h"
 #include <quadruped_msgs/generalConfig.h>
+#include <quadruped_msgs/CMPC_Result.h>
+
+#include <unitree_legged_msgs/LowCmd.h>
+#include <unitree_legged_msgs/LowState.h>
+#include <unitree_legged_msgs/HighState.h>
 
 struct JointEff {
   double eff[12];
@@ -54,16 +59,17 @@ class GaitCtrller {
   ~GaitCtrller();
   void SetIMUData(double* imuData);
   void SetLegData(double* motorData);
-  void PreWork(double* imuData, double* motorData);
+//  void PreWork(double* imuData, double* motorData);
   void PreWork(VectorNavData& imuData, LegData& motorData);
   void SetGaitType(int gaitType);
   void SetRobotMode(int mode);
   void SetRobotVel(double& x, double&y, double& z);
   void SetLegParams(PDcoeffs coefs);
-  void TorqueCalculator(double* imuData, double* motorData, double* effort);
+//  void TorqueCalculator(double* imuData, double* motorData, double* effort);
   void jump(bool trigger);
   void updateConfig(quadruped_msgs::generalConfig& cfg);
   Eigen::VectorXd TorqueCalculator(VectorNavData& imuData, LegData& motorData);
+    void publushDebugToRos(VectorNavData& imu, LegData& legData);
 
  private:
   int _gaitType = 0;
@@ -87,6 +93,11 @@ class GaitCtrller {
   std::unique_ptr<DesiredStateCommand<float>> _desiredStateCommand;
   std::unique_ptr<SafetyChecker<float>> safetyChecker;
   quadruped_msgs::generalConfig config_;
+
+  ros::NodeHandle nh_;
+  ros::Publisher low_state_pub_;
+  ros::Publisher high_state_pub_;
+  ros::Publisher cmpc_res_pub_;
 };
 
 //extern "C" {

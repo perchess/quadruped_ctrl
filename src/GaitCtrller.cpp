@@ -4,7 +4,7 @@ GaitCtrller::GaitCtrller(double freq, std::vector<float> ctrlParam)
   : ctrlParam(ctrlParam)
   , _quadruped{ buildUnitreeA1<float>() }
   , _model{ _quadruped.buildModel() }
-  , convexMPC{ std::make_unique<ConvexMPCLocomotion>(1.0 / freq, 13) }
+  , convexMPC{ std::make_unique<ConvexMPCLocomotion>(1.0 / freq, 27 / (1000. / freq) ) }
   , _legController{ std::make_unique<LegController<float>>(_quadruped) }
   , _stateEstimator{ std::make_unique<StateEstimatorContainer<float>>(
         cheaterState.get(), &_vectorNavData, _legController->datas, &_stateEstimate,
@@ -25,6 +25,9 @@ GaitCtrller::GaitCtrller(double freq, std::vector<float> ctrlParam)
   _stateEstimator->addEstimator<LinearKFPositionVelocityEstimator<float>>();
 
   std::cout << "finish init controller" << std::endl;
+  low_state_pub_ = nh_.advertise<unitree_legged_msgs::LowState>("low_mpc", 1);
+  high_state_pub_ = nh_.advertise<unitree_legged_msgs::HighState>("high_mpc", 1);
+  cmpc_res_pub_ = nh_.advertise<quadruped_msgs::CMPC_Result>("cmpc_result", 1);
 }
 
 GaitCtrller::~GaitCtrller() {}
@@ -53,15 +56,24 @@ void GaitCtrller::SetLegData(double* motorData) {
   }
 }
 
-void GaitCtrller::PreWork(double* imuData, double* motorData) {
-  SetIMUData(imuData);
-  SetLegData(motorData);
-  _stateEstimator->run();
-  _legController->updateData(&_legdata);
-}
+//void GaitCtrller::PreWork(double* imuData, double* motorData) {
+//  SetIMUData(imuData);
+//  SetLegData(motorData);
+//  _stateEstimator->run();
+//  _legController->updateData(&_legdata);
+//}
 
 void GaitCtrller::PreWork(VectorNavData& imuData, LegData& motorData) {
   _vectorNavData = imuData;
+  // Меняю направления сочленений для unitree a1
+//  for (int leg = 0; leg < 4; leg++)
+//  {
+//    motorData.q_hip[leg] = -motorData.q_hip[leg]; // hip
+//    motorData.q_knee[leg] = -motorData.q_knee[leg]; // knee
+//    motorData.qd_hip[leg] = -motorData.qd_hip[leg]; // hip
+//    motorData.qd_knee[leg] = -motorData.qd_knee[leg]; // knee
+//  }
+  publushDebugToRos(_vectorNavData, _legdata);
   _legdata = motorData;
   _stateEstimator->run();
   _legController->updateData(&_legdata);
@@ -122,9 +134,10 @@ Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& m
     std::cout << "broken: Force FeedForward Safety Check FAIL" << std::endl;
 
   }else if (!safetyChecker->checkJointLimit(*_legController)) {
-    _safetyCheck = true;
-    ROS_WARN_STREAM(ros::this_node::getName() + " : IGNORED JOINT LIMIT CHECK!!!");
-    std::cout << "broken: Joint Limit Safety Check FAIL" << std::endl;
+//    _safetyCheck = false;
+    ROS_WARN_STREAM_ONCE(ros::this_node::getName() + " : IGNORED JOINT LIMIT CHECK!!!");
+//    ROS_ERROR_STREAM_ONCE("broken: Joint Limit Safety Check FAIL");
+//    std::cout << "broken: Joint Limit Safety Check FAIL" << std::endl;
   }
 
   convexMPC->run(_quadruped, *_legController, *_stateEstimator,
@@ -151,57 +164,57 @@ Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& m
    return effort;
 }
 
-void GaitCtrller::TorqueCalculator(double* imuData, double* motorData,
-                                   double* effort) {
-  PreWork(imuData, motorData);
+//void GaitCtrller::TorqueCalculator(double* imuData, double* motorData,
+//                                   double* effort) {
+//  PreWork(imuData, motorData);
 
-  // Setup the leg controller for a new iteration
-  _legController->zeroCommand();
-  _legController->setEnabled(true);
-  _legController->setMaxTorqueCheetah3(208.5);
+//  // Setup the leg controller for a new iteration
+//  _legController->zeroCommand();
+//  _legController->setEnabled(true);
+//  _legController->setMaxTorqueCheetah3(208.5);
 
-  // Find the desired state trajectory
-  _desiredStateCommand->convertToStateCommands(_gamepadCommand);
+//  // Find the desired state trajectory
+//  _desiredStateCommand->convertToStateCommands(_gamepadCommand);
 
-  //safety check
-  if(!safetyChecker->checkSafeOrientation(*_stateEstimator)){
-    _safetyCheck = false;
-    std::cout << "broken: Orientation Safety Check FAIL" << std::endl;
+//  //safety check
+//  if(!safetyChecker->checkSafeOrientation(*_stateEstimator)){
+//    _safetyCheck = false;
+//    std::cout << "broken: Orientation Safety Check FAIL" << std::endl;
 
-  }else if (!safetyChecker->checkPDesFoot(_quadruped, *_legController)) {
-    _safetyCheck = false;
-    std::cout << "broken: Foot Position Safety Check FAIL" << std::endl;
+//  }else if (!safetyChecker->checkPDesFoot(_quadruped, *_legController)) {
+//    _safetyCheck = false;
+//    std::cout << "broken: Foot Position Safety Check FAIL" << std::endl;
 
-  }else if (!safetyChecker->checkForceFeedForward(*_legController)) {
-    _safetyCheck = false;
-    std::cout << "broken: Force FeedForward Safety Check FAIL" << std::endl;
+//  }else if (!safetyChecker->checkForceFeedForward(*_legController)) {
+//    _safetyCheck = false;
+//    std::cout << "broken: Force FeedForward Safety Check FAIL" << std::endl;
 
-  }else if (!safetyChecker->checkJointLimit(*_legController)) {
-    _safetyCheck = false;
-    std::cout << "broken: Joint Limit Safety Check FAIL" << std::endl;
-  }
+//  }else if (!safetyChecker->checkJointLimit(*_legController)) {
+//    _safetyCheck = false;
+//    std::cout << "broken: Joint Limit Safety Check FAIL" << std::endl;
+//  }
 
-  convexMPC->run(_quadruped, *_legController, *_stateEstimator,
-                 *_desiredStateCommand, _gamepadCommand, _gaitType, _robotMode);
+//  convexMPC->run(_quadruped, *_legController, *_stateEstimator,
+//                 *_desiredStateCommand, _gamepadCommand, _gaitType, _robotMode);
 
-  _legController->updateCommand(&legcommand);
+//  _legController->updateCommand(&legcommand);
 
-  if(_safetyCheck) {
-    for (int i = 0; i < 4; i++) {
-      effort[i * 3] = legcommand.tau_abad_ff[i];
-      effort[i * 3 + 1] = legcommand.tau_hip_ff[i];
-      effort[i * 3 + 2] = legcommand.tau_knee_ff[i];
-    }
-  } else {
-    for (int i = 0; i < 4; i++) {
-      effort[i * 3] = 0.0;
-      effort[i * 3 + 1] = 0.0;
-      effort[i * 3 + 2] = 0.0;
-    }
-  }
+//  if(_safetyCheck) {
+//    for (int i = 0; i < 4; i++) {
+//      effort[i * 3] = legcommand.tau_abad_ff[i];
+//      effort[i * 3 + 1] = legcommand.tau_hip_ff[i];
+//      effort[i * 3 + 2] = legcommand.tau_knee_ff[i];
+//    }
+//  } else {
+//    for (int i = 0; i < 4; i++) {
+//      effort[i * 3] = 0.0;
+//      effort[i * 3 + 1] = 0.0;
+//      effort[i * 3 + 2] = 0.0;
+//    }
+//  }
 
-  // return effort;
-}
+//  // return effort;
+//}
 
 void GaitCtrller::jump(bool trigger)
 {
@@ -245,9 +258,118 @@ void GaitCtrller::updateConfig(quadruped_msgs::generalConfig& cfg)
         0, 0, config_.kd_joint_knee;
   }
 
-  // Установить походку
+//  // Установить походку
   this->SetGaitType(cfg.gait);
 
+  // Регулирование высоты робота
+//  convexMPC->setBodyHeight(float(cfg.body_height), "default");
+//  convexMPC->setBodyHeight(float(cfg.body_height_run), "run");
+//  convexMPC->setBodyHeight(float(cfg.body_height_jump), "jump");
+
   // Включить другой режим питания (какая-то фича китайцев)
-  this->SetRobotMode(cfg.power_mode);
+//  this->SetRobotMode(cfg.power_mode);
+}
+
+void GaitCtrller::publushDebugToRos(VectorNavData& imu, LegData& legData)
+{
+  unitree_legged_msgs::LowState msg;
+  unitree_legged_msgs::HighState high_msg;
+  quadruped_msgs::CMPC_Result cmpc_msg;
+
+  // IMU
+  msg.header.stamp = ros::Time::now();
+  msg.imu.accelerometer.at(0) = imu.accelerometer(0);
+  msg.imu.accelerometer.at(1) = imu.accelerometer(1);
+  msg.imu.accelerometer.at(2) = imu.accelerometer(2);
+  msg.imu.gyroscope.at(0) = imu.gyro(0);
+  msg.imu.gyroscope.at(1) = imu.gyro(1);
+  msg.imu.gyroscope.at(2) = imu.gyro(2);
+  msg.imu.quaternion.at(0) = imu.quat(0);
+  msg.imu.quaternion.at(1) = imu.quat(1);
+  msg.imu.quaternion.at(2) = imu.quat(2);
+  msg.imu.quaternion.at(3) = imu.quat(3);
+  // Motors
+  for (size_t leg = 0; leg < 4; leg++) {
+    msg.motorState.at(leg * 3).q = legData.q_abad[leg];
+    msg.motorState.at(leg * 3 + 1).q = legData.q_hip[leg];
+    msg.motorState.at(leg * 3 + 2).q = legData.q_knee[leg];
+
+    msg.motorState.at(leg * 3).dq = legData.qd_abad[leg];
+    msg.motorState.at(leg * 3 + 1).dq = legData.qd_hip[leg];
+    msg.motorState.at(leg * 3 + 2).dq = legData.qd_knee[leg];
+  }
+  // Estimators
+
+  // Вывод pos векторы (size 3)
+  high_msg.footPosition2Body.at(0).x =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      position.transpose().operator()(0);
+  high_msg.footPosition2Body.at(0).y =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      position.transpose().operator()(1);
+  high_msg.footPosition2Body.at(0).z =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      position.transpose().operator()(2);
+
+  // Вывод vWorld вектор (size 3)
+  high_msg.footPosition2Body.at(1).x =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      vWorld.transpose().operator()(0);
+  high_msg.footPosition2Body.at(1).y =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      vWorld.transpose().operator()(1);
+  high_msg.footPosition2Body.at(1).z =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      vWorld.transpose().operator()(2);
+
+  // Вывод vBody вектор (size 3)
+  high_msg.footPosition2Body.at(2).x =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      vBody.transpose().operator()(0);
+  high_msg.footPosition2Body.at(2).y =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      vBody.transpose().operator()(1);
+  high_msg.footPosition2Body.at(2).z =
+      _stateEstimator->getEstimator(2)->_stateEstimatorData.result->
+      vBody.transpose().operator()(2);
+
+  // CCMPC структура (выход)
+  for (size_t leg = 0; leg < 4; leg++)
+  {
+    for(size_t joint =0; joint < 3; joint++)
+    {
+      cmpc_msg.commands.at(leg).forceFeedForward.at(joint) =
+          _legController->commands[leg].forceFeedForward(joint);
+      cmpc_msg.commands.at(leg).tauFeedForward.at(joint) =
+          _legController->commands[leg].tauFeedForward(joint);
+      cmpc_msg.commands.at(leg).qDes.at(joint) =
+          _legController->commands[leg].qDes(joint);
+      cmpc_msg.commands.at(leg).qdDes.at(joint) =
+          _legController->commands[leg].qdDes(joint);
+      cmpc_msg.commands.at(leg).pDes.at(joint) =
+          _legController->commands[leg].pDes(joint);
+      cmpc_msg.commands.at(leg).vDes.at(joint) =
+          _legController->commands[leg].vDes(joint);
+      cmpc_msg.commands.at(leg).pAct.at(joint) =
+          _legController->datas[leg].p(joint);
+      cmpc_msg.commands.at(leg).vAct.at(joint) =
+          _legController->datas[leg].v(joint);
+      cmpc_msg.commands.at(leg).pError.at(joint) =
+          (_legController->commands[leg].pDes(joint) - _legController->datas[leg].p(joint));
+      cmpc_msg.commands.at(leg).vError.at(joint) =
+          (_legController->commands[leg].vDes(joint) - _legController->datas[leg].v(joint));
+      cmpc_msg.commands.at(leg).kpCartesian.at(joint) =
+          _legController->commands[leg].kpCartesian(joint,joint);
+      cmpc_msg.commands.at(leg).kdCartesian.at(joint) =
+          _legController->commands[leg].kdCartesian(joint,joint);
+      cmpc_msg.commands.at(leg).kpJoint.at(joint) =
+          _legController->commands[leg].kpJoint(joint,joint);
+      cmpc_msg.commands.at(leg).kdJoint.at(joint) =
+          _legController->commands[leg].kdJoint(joint,joint);
+      cmpc_msg.contactPhase.at(leg) = convexMPC->getCCMPCResult().contactPhase(leg);
+    }
+  }
+  cmpc_res_pub_.publish(cmpc_msg);
+  low_state_pub_.publish(msg);
+  high_state_pub_.publish(high_msg);
 }
