@@ -411,7 +411,7 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
         firstSwing[foot] = false;
         footSwingTrajectories[foot].setInitialPosition(pFoot[foot]);
       }
-//      footSwingTrajectories[0].print();
+      footSwingTrajectories[0].print();
 
       footSwingTrajectories[foot].computeSwingTrajectoryBezier(
           swingState, swingTimes[foot]);

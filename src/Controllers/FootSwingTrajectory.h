@@ -83,7 +83,9 @@ public:
   // Вывод дебаг информации полей
   void print()
   {
-    std::cout << "p0: " << _p0 << " pf: " << _pf << " height: " << _height << std::endl;
+    std::cout << "p0: " << _p0 << std::endl;
+    std::cout << "pf: " << _pf << std::endl;
+    std::cout << "height: " << _height << std::endl;
   }
 
 
