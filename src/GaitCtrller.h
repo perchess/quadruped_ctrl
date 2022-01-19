@@ -69,7 +69,8 @@ class GaitCtrller {
   void jump(bool trigger);
   void updateConfig(quadruped_msgs::generalConfig& cfg);
   Eigen::VectorXd TorqueCalculator(VectorNavData& imuData, LegData& motorData);
-    void publushDebugToRos(VectorNavData& imu, LegData& legData);
+  void publushDebugToRos(VectorNavData& imu, LegData& legData);
+  std::shared_ptr<ConvexMPCLocomotion> getConvexMpcPtr() {return convexMPC;}
 
  private:
   int _gaitType = 0;
@@ -80,7 +81,7 @@ class GaitCtrller {
 
   Quadruped<float> _quadruped;
   FloatingBaseModel<float> _model;
-  std::unique_ptr<ConvexMPCLocomotion> convexMPC;
+  std::shared_ptr<ConvexMPCLocomotion> convexMPC;
   std::unique_ptr<LegController<float>> _legController;
   std::unique_ptr<StateEstimatorContainer<float>> _stateEstimator;
   LegData _legdata;

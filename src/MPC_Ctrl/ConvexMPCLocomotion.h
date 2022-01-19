@@ -92,8 +92,8 @@ public:
   {Kp = kp_cartesian; Kd = kd_cartesian;}
   // Установить высоту робота: стандартную, при беге, при прыжках
   void setBodyHeight(float h, std::string type);
-  CMPC_Result<float> getCCMPCResult()
-  {return result;}
+  CMPC_Result<float> getCCMPCResult() {return result;}
+  FootSwingTrajectory<float>* getFootTrajVect() {return footSwingTrajectories;}
 
 
   template<typename T>

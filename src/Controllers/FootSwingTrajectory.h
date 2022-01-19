@@ -65,6 +65,14 @@ public:
     return _p;
   }
 
+
+  /*!
+   * Get the desired final  foot position
+   */
+  Vec3<T> getFinalPosition() {
+    return _pf;
+  }
+
   /*!
    * Get the foot velocity at the current point along the swing
    * @return : the foot velocity
