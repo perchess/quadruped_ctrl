@@ -88,10 +88,13 @@ public:
 
   ConvexMPCLocomotion(float _dt, int _iterations_between_mpc);
   void initialize();
-  void setPDcoefs(Mat3<float>& kp_cartesian, Mat3<float>& kd_cartesian)
-  {Kp = kp_cartesian; Kd = kd_cartesian;}
+  void setPDcoefs(Mat3<float> kp_cartesian, Mat3<float> kd_cartesian, Mat3<float> kp_joint, Mat3<float> kd_joint)
+  {Kp = kp_cartesian; Kd = kd_cartesian; KpJ = kp_joint; KdJ = kd_joint;}
   // Установить высоту робота: стандартную, при беге, при прыжках
   void setBodyHeight(float h, std::string type);
+  void setTrotDuration(int d);
+  void setStepHeight(float h) {step_height_=h;}
+  void setHorizon(int h) {horizonLength = h;}
   CMPC_Result<float> getCCMPCResult() {return result;}
   FootSwingTrajectory<float>* getFootTrajVect() {return footSwingTrajectories;}
 
@@ -145,6 +148,7 @@ private:
   int iterationsBetweenMPC;  //15
   int horizonLength;    //10
   int default_iterations_between_mpc;
+  float trot_duration_;
   float dt;  //0.002
   float dtMPC; //0.03
   int iterationCounter = 0;  //
@@ -154,12 +158,15 @@ private:
   OffsetDurationGait trotting, bounding, pronking, jumping, galloping, standing, trotRunning, walking, walking2, pacing, aio;
   // MixedFrequncyGait random, random2;
   Mat3<float> Kp, Kd, Kp_stance, Kd_stance, Kp1;
+  Mat3<float> KpJ, KdJ; // Kp Kd коеффициенты в пространстве конфигураций
   bool firstRun = true;
   bool firstSwing[4];  //true
   float swingTimeRemaining[4];
   float stand_traj[6];
   int current_gait;
   int gaitNumber;
+  float step_height_;
+
 
   Vec3<float> world_position_desired;
   Vec3<float> rpy_int;

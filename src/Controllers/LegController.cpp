@@ -109,11 +109,13 @@ void LegController<T>::updateData(LegData* legData) {
 
 /*!
  * Update the "leg command" for the SPIne board message
+ * Заполняет принятую структуру данными
  */
 template <typename T>
 void LegController<T>::updateCommand(LegCommand* legCommand)
 {
-  for (int leg = 0; leg < 4; leg++) {
+  for (int leg = 0; leg < 4; leg++)
+  {
     /// [tauFF] крутящий момент для лапы (прямая связь)
     Vec3<T> legTorque = commands[leg].tauFeedForward;
 
@@ -129,12 +131,26 @@ void LegController<T>::updateCommand(LegCommand* legCommand)
     /// [Torque] приведение силы на конце лапы к крутящему момменту в двигателях
     legTorque += datas[leg].J.transpose() * footForce;
 
-    //计算期望关节角度 китайцы начали перекапывать ....
-    computeLegIK(_quadruped, commands[leg].pDes, &(commands[leg].qDes), leg);
+    // Китайское решение ОЗК с моим добавлением qd
+    computeLegIK(leg);
 
-      legCommand->tau_abad_ff[leg] = legTorque(0);
-      legCommand->tau_hip_ff[leg] = legTorque(1);
-      legCommand->tau_knee_ff[leg] = legTorque(2);
+//      legCommand->tau_abad_ff[leg] = legTorque(0);
+//      legCommand->tau_hip_ff[leg] = legTorque(1);
+//      legCommand->tau_knee_ff[leg] = legTorque(2);
+
+    legCommand->tau_abad_ff[leg] =
+        commands[leg].kpJoint(0,0) * (commands[leg].qDes(0) - datas[leg].q(0)) -
+        commands[leg].kdJoint(0,0) * (commands[leg].qdDes(0) - datas[leg].qd(0))
+        + legTorque(0);
+//    std::cout << "kpJoint : " << commands[leg].kpJoint(0,0) << " " << commands[leg].kpJoint(1,1) << " " << commands[leg].kpJoint(2,2) << std::endl;
+    legCommand->tau_hip_ff[leg] =
+        commands[leg].kpJoint(1,1) * (commands[leg].qDes(1) - datas[leg].q(1)) -
+        commands[leg].kdJoint(1,1) * (commands[leg].qdDes(1) - datas[leg].qd(1))
+        + legTorque(1);
+    legCommand->tau_knee_ff[leg] =
+        commands[leg].kpJoint(2,2) * (commands[leg].qDes(2) - datas[leg].q(2)) -
+        commands[leg].kdJoint(2,2) * (commands[leg].qdDes(2) - datas[leg].qd(2))
+        + legTorque(2);
 
       legCommand->flags[leg] = _legsEnabled ? 1 : 0;
   }
@@ -205,85 +221,5 @@ template void computeLegJacobianAndPosition<float>(Quadruped<float>& quad,
                                                    Mat3<float>* J,
                                                    Vec3<float>* p, int leg);
 
-template <typename T>
-void computeLegIK(Quadruped<T>& quad, Vec3<T>& pDes, Vec3<T>* qDes, int leg) {
-  T l1 = quad._abadLinkLength + quad._kneeLinkY_offset;
-  T l2 = quad._hipLinkLength;
-  T l3 = quad._kneeLinkLength;
-  T sideSign = quad.getSideSign(leg);
 
-  T D = (pDes[0] * pDes[0] + pDes[1] * pDes[1] + pDes[2] * pDes[2] - l1 * l1 -
-         l2 * l2 - l3 * l3) /
-        (2 * l2 * l3);
 
-  if (D > 1.00001 || D < -1.00001) {
-    // printf("_______OUT OF DOMAIN_______!!!\n");
-    if (D > 1.00001) {
-      D = 0.99999;
-    }
-    if (D < -1.00001) {
-      D = -0.99999;
-    }
-  }
-
-  T gamma = atan2(-sqrt(1 - D * D), D);
-  T tetta = -atan2(pDes[2], pDes[1]) -
-            atan2(sqrt(pDes[1] * pDes[1] + pDes[2] * pDes[2] - l1 * l1),
-                  sideSign * l1);
-  T alpha =
-      atan2(-pDes[0], sqrt(pDes[1] * pDes[1] + pDes[2] * pDes[2] - l1 * l1)) -
-      atan2(l3 * sin(gamma), l2 + l3 * cos(gamma));
-
-  qDes->operator()(0) = -tetta;
-  qDes->operator()(1) = alpha;
-  qDes->operator()(2) = gamma;
-}
-
-// template <typename T>
-// void computeLegIK(Quadruped<T>& quad, Vec3<T>& pDes, Vec3<T>* qDes, int leg)
-// {
-//   T l1 = quad._abadLinkLength + quad._kneeLinkY_offset;
-//   T l2 = quad._hipLinkLength;
-//   T l3 = quad._kneeLinkLength;
-//   T sideSign = quad.getSideSign(leg);
-
-//   T temp1 = (pDes(0) * pDes(0) + pDes(1) * pDes(1) + pDes(2) * pDes(2) - l1 *
-//   l1 - l2 * l2 - l3 * l3) / (2 * l2 * l3); qDes->operator()(2) = acos(temp1);
-
-//   T k1 = temp1;
-//   T k2 = sqrt(1 - k1 * k1);
-//   T temp2 = (l3 * k1 + l2) * (l3 * k1 + l2) + l3 * l3 * k2 * k2;
-//   T temp3 = 2 * pDes(0) * (l3 * k1 + l2);
-//   T temp4 = pDes(0) * pDes(0) - l3 * l3 * k2 * k2;
-//   T temp5 = (temp3 - sqrt(temp3 * temp3 - 4 * temp2 * temp4)) / (2 * temp2);
-//   qDes->operator()(1) = asin(temp5);
-
-//   T temp6 = sideSign * l1 + sqrt(pDes(1) * pDes(1) + pDes(2) * pDes(2) - l1 *
-//   l1); T temp7 = sideSign * l1 - sqrt(pDes(1) * pDes(1) + pDes(2) * pDes(2) -
-//   l1 * l1); T temp8 = temp6 * temp6 + temp7 * temp7; T temp9 = 2 * temp6 *
-//   (pDes(1) + pDes(2)); T temp10 = (pDes(1) + pDes(2)) * (pDes(1) + pDes(2)) -
-//   temp7 * temp7; T temp11 = (temp9 + sqrt(temp9 * temp9 - 4 * temp8 *
-//   temp10)) / (2 * temp8); qDes->operator()(0) = asin(temp11);
-// }
-
-// template <typename T>
-// void computeLegIK(Quadruped<T>& quad, Vec3<T> pDes, std::vector<double>
-// &qDes, int leg) {
-//   T l1 = quad._abadLinkLength + quad._kneeLinkY_offset;
-//   T l2 = quad._hipLinkLength;
-//   T l3 = quad._kneeLinkLength;
-//   T sideSign = quad.getSideSign(leg);
-
-//   T tempL = sqrt(pDes[0] * pDes[0] + pDes[1] * pDes[1] + pDes[2] * pDes[2]);
-//   T tempL23 = sqrt(tempL * tempL - l1 * l1);
-//   T angle1 = fabs(
-//       acos((l1 * l1 + tempL * tempL - tempL23 * tempL23) / (2 * l1 *
-//       tempL)));
-//   T tempAngle1 = acos(fabs(pDes[1]) / tempL);
-//   qDes[0] = sideSign * (angle1 - tempAngle1);
-//   T angle2 = fabs(acos((l2 * l2 + tempL * tempL - l3 * l3) / (2 * l2 *
-//   tempL))); T tempAngle2 = asin(pDes[0] / tempL); qDes[1] = -(angle2 -
-//   tempAngle2); T tempAngle3 =
-//       fabs(acos((l2 * l2 + l3 * l3 - tempL * tempL) / (2 * l2 * l3)));
-//   qDes[2] = 3.1415926535898 - tempAngle3;
-// }

@@ -234,40 +234,54 @@ void GaitCtrller::SetLegParams(PDcoeffs coefs)
 
 void GaitCtrller::updateConfig(quadruped_msgs::generalConfig& cfg)
 {
+  // Сброс параметров ног
+//    _legController->zeroCommand();
+
   config_ = cfg;
   // Коэффициенты для ног
   Mat3<float> kp;
   Mat3<float> kd;
+  Mat3<float> kpJ;
+  Mat3<float> kdJ;
   kp <<   config_.kp_cartesian_x, 0, 0,
           0, config_.kp_cartesian_y, 0,
           0, 0, config_.kp_cartesian_z;
   kd <<   config_.kd_cartesian_x, 0, 0,
           0, config_.kd_cartesian_y, 0,
           0, 0, config_.kd_cartesian_z;
-  convexMPC->setPDcoefs(kp, kd);
+
   // Коэффициенты для сочленений
   for (size_t leg = 0; leg < 4; leg++)
   {
-    _legController->commands[leg].kpJoint <<
+    kpJ <<
         config_.kp_joint_abad, 0, 0,
         0, config_.kp_joint_hip, 0,
         0, 0, config_.kp_joint_knee;
-    _legController->commands[leg].kdJoint <<
+    kdJ <<
         config_.kd_joint_abad, 0, 0,
         0, config_.kd_joint_hip, 0,
         0, 0, config_.kd_joint_knee;
   }
+    convexMPC->setPDcoefs(kp, kd, kpJ, kdJ);
 
 //  // Установить походку
   this->SetGaitType(cfg.gait);
 
-  // Регулирование высоты робота
+    // Изменение горизонта планирования
+  convexMPC->setHorizon(cfg.horizon_length);
+
+  // Задать период шага
+  convexMPC->setTrotDuration(cfg.trot_duration);
+
+  // Регулирование высоты шага
+  convexMPC->setStepHeight(cfg.step_height);
+
 //  convexMPC->setBodyHeight(float(cfg.body_height), "default");
 //  convexMPC->setBodyHeight(float(cfg.body_height_run), "run");
 //  convexMPC->setBodyHeight(float(cfg.body_height_jump), "jump");
 
-  // Включить другой режим питания (какая-то фича китайцев)
-//  this->SetRobotMode(cfg.power_mode);
+   // "Плавная" походка
+  this->SetRobotMode(cfg.walk_mode);
 }
 
 void GaitCtrller::publushDebugToRos(VectorNavData& imu, LegData& legData)

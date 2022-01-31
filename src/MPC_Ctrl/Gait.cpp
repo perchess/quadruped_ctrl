@@ -40,6 +40,24 @@ void OffsetDurationGait::setGaitParam(int nSegment, Vec4<int> offsets, Vec4<int>
   // _swing = nSegment - durations[0];
 }
 
+
+void OffsetDurationGait::update(Vec4<int> new_durations, int new_nSegment)
+{
+    _durations = new_durations.array();
+    _nIterations = new_nSegment;
+    // allocate memory for MPC gait table
+    if(NULL != _mpc_table) {
+      delete[] _mpc_table;
+    }
+    _mpc_table = new int[new_nSegment * 4];
+    _durationsFloat = new_durations.cast<float>() / (float) _nIterations;
+    new_durations(0) = 0;
+    new_durations(3)=0;
+    _offsets = new_durations.array();
+    _offsetsFloat = new_durations.cast<float>() / (float) _nIterations;
+}
+
+
 MixedFrequncyGait::MixedFrequncyGait(int nSegment, Vec4<int> periods, float duty_cycle, const std::string &name) {
   _name = name;
   _duty_cycle = duty_cycle;

@@ -34,6 +34,7 @@ public:
   OffsetDurationGait(int nSegment, Vec4<int> offset, Vec4<int> durations, const std::string& name);
   ~OffsetDurationGait();
   void setGaitParam(int nSegment, Vec4<int> offset, Vec4<int> durations, const std::string& name);
+  void update(Vec4<int> new_durations, int new_nSegment);
   Vec4<float> getContactState();
   Vec4<float> getSwingState();
   int* getMpcTable();

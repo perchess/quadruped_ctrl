@@ -68,6 +68,8 @@ class LegController {
  public:
   LegController(Quadruped<T>& quad) : _quadruped(quad) {
     for (auto& data : datas) data.setQuadruped(_quadruped);
+    // Инициализация массива
+    for (size_t i = 0; i < 4; i++) prev_qDes[i] = Vec3<T>::Zero();
   }
 
   void zeroCommand();
@@ -92,6 +94,7 @@ class LegController {
   T _maxTorque = 0;
   bool _zeroEncoders = false;
   u32 _calibrateEncoders = 0;
+  Vec3<T> prev_qDes[4];
 //  int flags = 0;
 
   float stand_target[12] = {0.0, -0.8, 1.6, 0.0, -0.8, 1.6,
@@ -99,6 +102,43 @@ class LegController {
   float init_pos[12] = {0.0};
 
 //  int myflags = 0;
+//  template <>
+  void computeLegIK(size_t leg)
+  {
+    static double dt = 0.002;
+    T l1 = _quadruped._abadLinkLength + _quadruped._kneeLinkY_offset;
+    T l2 = _quadruped._hipLinkLength;
+    T l3 = _quadruped._kneeLinkLength;
+    T sideSign = _quadruped.getSideSign(leg);
+
+    T D = (commands[leg].pDes[0] * commands[leg].pDes[0] + commands[leg].pDes[1] * commands[leg].pDes[1] + commands[leg].pDes[2] * commands[leg].pDes[2] - l1 * l1 -
+           l2 * l2 - l3 * l3) /
+          (2 * l2 * l3);
+
+    if (D > 1.00001 || D < -1.00001) {
+      // printf("_______OUT OF DOMAIN_______!!!\n");
+      if (D > 1.00001) {
+        D = 0.99999;
+      }
+      if (D < -1.00001) {
+        D = -0.99999;
+      }
+    }
+
+    T gamma = atan2(-sqrt(1 - D * D), D);
+    T tetta = -atan2(commands[leg].pDes[2], commands[leg].pDes[1]) -
+              atan2(sqrt(commands[leg].pDes[1] * commands[leg].pDes[1] + commands[leg].pDes[2] * commands[leg].pDes[2] - l1 * l1),
+                    sideSign * l1);
+    T alpha =
+        atan2(-commands[leg].pDes[0], sqrt(commands[leg].pDes[1] * commands[leg].pDes[1] + commands[leg].pDes[2] * commands[leg].pDes[2] - l1 * l1)) -
+        atan2(l3 * sin(gamma), l2 + l3 * cos(gamma));
+
+    commands[leg].qDes(0) = -tetta;
+    commands[leg].qDes(1) = -alpha;
+    commands[leg].qDes(2) = -gamma;
+    commands[leg].qdDes = dt * (commands[leg].qDes - prev_qDes[leg]);
+    prev_qDes[leg] = commands[leg].qDes;
+  }
 };
 
 template <typename T>
