@@ -37,6 +37,7 @@ public:
   void setInitialPosition(Vec3<T> p0) {
     _p0 = p0;
     _p = p0;    // solve init stand pDesFootWorld=0 problem
+    _step_len = _pf - _p0;
   }
 
   /*!
@@ -65,12 +66,26 @@ public:
     return _p;
   }
 
-
   /*!
    * Get the desired final  foot position
    */
   Vec3<T> getFinalPosition() {
     return _pf;
+  }
+
+
+  /*!
+   * Get the initial  foot position
+   */
+  Vec3<T> getStartPosition() {
+    return _p0;
+  }
+
+  /*!
+   * Get the step length as a vector (x y z)
+   */
+  Vec3<T> getStepLength() {
+    return _step_len;
   }
 
   /*!
@@ -98,7 +113,7 @@ public:
 
 
 private:
-  Vec3<T> _p0, _pf, _p, _v, _a;
+  Vec3<T> _p0, _pf, _p, _v, _a, _step_len;
   T _height;
 };
 

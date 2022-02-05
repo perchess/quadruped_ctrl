@@ -97,7 +97,7 @@ public:
   void setHorizon(int h) {horizonLength = h;}
   CMPC_Result<float> getCCMPCResult() {return result;}
   FootSwingTrajectory<float>* getFootTrajVect() {return footSwingTrajectories;}
-
+  void setPfCorrection(float x, float y) {pf_add_x_=x; pf_add_y_=y;}
 
   template<typename T>
   void run(Quadruped<T> &_quadruped, LegController<T> &_legController, StateEstimatorContainer<float> &_stateEstimator,
@@ -166,6 +166,8 @@ private:
   int current_gait;
   int gaitNumber;
   float step_height_;
+  float pf_add_x_;
+  float pf_add_y_;
 
 
   Vec3<float> world_position_desired;

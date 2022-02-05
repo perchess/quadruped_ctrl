@@ -40,7 +40,7 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(float _dt, int _iterations_between_mpc)
     , walking2(horizonLength, Vec4<int>(0, 5, 5, 0),
                Vec4<int>(5, 5, 5, 5), "Walking2")
     , pacing(horizonLength, Vec4<int>(7, 0, 7, 0), Vec4<int>(7, 7, 7, 7), "Pacing")
-    , aio(horizonLength, Vec4<int>(0, 0, 0, 0), Vec4<int>(horizonLength, horizonLength, horizonLength, horizonLength), "aio")
+    , aio(horizonLength, Vec4<int>(0, horizonLength/2.0, horizonLength/2.0, 0), Vec4<int>(horizonLength, horizonLength, horizonLength, horizonLength), "aio")
 {
   dtMPC = dt * iterationsBetweenMPC;  // 0.03
   default_iterations_between_mpc = iterationsBetweenMPC;
@@ -74,6 +74,8 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(float _dt, int _iterations_between_mpc)
   Kd << 30, 0, 0, 0, 30, 0, 0, 0, 30;
   Kd_stance  << 2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5;
   step_height_ = 0.09;
+  pf_add_x_ = 0;
+  pf_add_y_ = 0;
 }
 
 
@@ -384,28 +386,28 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
 
     // Using the estimated velocity is correct
     // Vec3<float> des_vel_world = seResult.rBody.transpose() * des_vel;
-    float pfx_rel = seResult.vWorld[0] * (.5 + 0.0) *
-                        stance_time +  //_parameters->cmpc_bonus_swing = 0.0
-                    .03f * (seResult.vWorld[0] - v_des_world[0]) +
-                    (0.5f * sqrt(seResult.position[2] / 9.81f)) *
-                        (seResult.vWorld[1] * _yaw_turn_rate);
+    float pfx_rel = seResult.vWorld[0] * (.5 + 0.0) * stance_time +
+      .03f*(seResult.vWorld[0]-v_des_world[0]) +
+      (0.5f*seResult.position[2]/9.81f) * (seResult.vWorld[1]*_yaw_turn_rate);
 
-    float pfy_rel = seResult.vWorld[1] * .5 * stance_time * 1.0 + //dtMPC +
-                    .03f * (seResult.vWorld[1] - v_des_world[1]) +
-                    (0.5f * sqrt(seResult.position[2] / 9.81f)) *
-                        (-seResult.vWorld[0] * _yaw_turn_rate);
+    float pfy_rel = seResult.vWorld[1] * .5 * stance_time * dtMPC +
+      .03f*(seResult.vWorld[1]-v_des_world[1]) +
+      (0.5f*seResult.position[2]/9.81f) * (-seResult.vWorld[0]*_yaw_turn_rate);
+
+#ifdef DEBUG_PF
     if (i == 1) {
-      // std::cout << "pf0 = " << (seResult.rBody*(Pf- seResult.position)).transpose() << " " << std::endl;
-      // std::cout << pfx_rel << " " << pfy_rel << std::endl;
-      // std::cout << 0.5f * sqrt(seResult.position[2] / 9.81f) * (seResult.vWorld[1] * _yaw_turn_rate) << " "
-      //           << (0.5f * sqrt(seResult.position[2] / 9.81f)) * (-seResult.vWorld[0] * _yaw_turn_rate) << std::endl;
-      // std::cout << (0.5f * seResult.position[2] / 9.81f) * (seResult.vWorld[0] * _yaw_turn_rate) << std::endl;
-      // std::cout << _yaw_turn_rate << std::endl;
+       std::cout << "pf0 = " << (seResult.rBody*(Pf- seResult.position)).transpose() << " " << std::endl;
+       std::cout << pfx_rel << " " << pfy_rel << std::endl;
+       std::cout << 0.5f * sqrt(seResult.position[2] / 9.81f) * (seResult.vWorld[1] * _yaw_turn_rate) << " "
+                 << (0.5f * sqrt(seResult.position[2] / 9.81f)) * (-seResult.vWorld[0] * _yaw_turn_rate) << std::endl;
+       std::cout << (0.5f * seResult.position[2] / 9.81f) * (seResult.vWorld[0] * _yaw_turn_rate) << std::endl;
+       std::cout << _yaw_turn_rate << std::endl;
     }
+#endif
     pfx_rel = fminf(fmaxf(pfx_rel, -p_rel_max), p_rel_max);
     pfy_rel = fminf(fmaxf(pfy_rel, -p_rel_max), p_rel_max);
-    Pf[0] += pfx_rel;
-    Pf[1] += pfy_rel;
+    Pf[0] += pfx_rel + pf_add_x_;
+    Pf[1] += pfy_rel + pf_add_y_;
     Pf[2] = 0.0;
     footSwingTrajectories[i].setFinalPosition(Pf);  //最终得到足底的位置，并作为轨迹终点 世界坐标系下的落足点
   }
