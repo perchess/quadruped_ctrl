@@ -27,7 +27,7 @@ struct StateEstimate {
   Vec3<T> vBody;
   Quat<T> orientation;
   Vec3<T> omegaBody;
-  RotMat<T> rBody;
+  RotMat<T> rBody; // Ориентация в виде матрицы поворота
   Vec3<T> rpy;
 
   Vec3<T> omegaWorld;

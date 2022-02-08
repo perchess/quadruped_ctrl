@@ -11,6 +11,7 @@
 
 #include <cstdio>
 #include <vector>
+#include <boost/circular_buffer.hpp>
 
 using Eigen::Array4f;
 using Eigen::Array4i;
@@ -98,6 +99,7 @@ public:
   CMPC_Result<float> getCCMPCResult() {return result;}
   FootSwingTrajectory<float>* getFootTrajVect() {return footSwingTrajectories;}
   void setPfCorrection(float x, float y) {pf_add_x_=x; pf_add_y_=y;}
+  void setPointsBuffer(boost::circular_buffer<Eigen::Vector3d>* buffer){points_=buffer;}
 
   template<typename T>
   void run(Quadruped<T> &_quadruped, LegController<T> &_legController, StateEstimatorContainer<float> &_stateEstimator,
@@ -145,6 +147,10 @@ private:
   void solveDenseMPC(int *mpcTable, StateEstimatorContainer<float> &_stateEstimator);
   void solveSparseMPC(int *mpcTable, StateEstimatorContainer<float> &_stateEstimator);
   void initSparseMPC();
+  Vec3<float> computePf(Vec3<float>& des_vel, float& stance_time,
+                        const StateEstimate<float>& seResult,
+                        Vec3<float>& pYawCorrected,
+                        Vec3<float>& v_des_world, int leg);
   int iterationsBetweenMPC;  //15
   int horizonLength;    //10
   int default_iterations_between_mpc;
@@ -168,6 +174,8 @@ private:
   float step_height_;
   float pf_add_x_;
   float pf_add_y_;
+  // Облако точек от сенсора глубины
+  boost::circular_buffer<Eigen::Vector3d>* points_;
 
 
   Vec3<float> world_position_desired;

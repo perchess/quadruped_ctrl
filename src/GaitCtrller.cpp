@@ -123,7 +123,8 @@ Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& m
   //safety check
   if(!safetyChecker->checkSafeOrientation(*_stateEstimator)){
     _safetyCheck = false;
-    std::cout << "broken: Orientation Safety Check FAIL" << std::endl;
+    ROS_ERROR_ONCE("Orientation safety check failed!\n");
+    ROS_DEBUG("Orientation safety check failed!\n");
 
   }else if (!safetyChecker->checkPDesFoot(_quadruped, *_legController)) {
     _safetyCheck = false;
