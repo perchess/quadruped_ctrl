@@ -175,7 +175,7 @@ private:
   float pf_add_x_;
   float pf_add_y_;
   // Облако точек от сенсора глубины
-  boost::circular_buffer<Eigen::Vector3d>* points_;
+  boost::circular_buffer<Vec3<double>>* points_;
 
 
   Vec3<float> world_position_desired;
@@ -194,6 +194,13 @@ private:
   SparseCMPC _sparseCMPC;
 
 };
+
+double calcDistance(Vec3<float> const& p1, Vec3<float> const& p2);
+
+const Eigen::Vector3d findClosestPoint(const Vec3<float>& point,
+                                       boost::circular_buffer<Eigen::Vector3d>& buffer);
+
+bool canPlace(const Vec3<float>& point, boost::circular_buffer<Eigen::Vector3d>& buffer, double thresh);
 
 
 #endif //CHEETAH_SOFTWARE_CONVEXMPCLOCOMOTION_H

@@ -143,7 +143,7 @@ template <>
 void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
                               LegController<float>& _legController,
                               StateEstimatorContainer<float>& _stateEstimator,
-                              DesiredStateCommand<float>& /*_desiredStateCommand*/,
+                              DesiredStateCommand<float>& _desiredStateCommand,
                               std::vector<double> gamepadCommand,
                               int gaitType, int robotMode) {
   bool omniMode = false;
@@ -389,9 +389,38 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
     des_vel[1] = _y_vel_des;
     des_vel[2] = 0.0;
 
+    // Расчет координат точки приземления лапы
+    auto Pf = computePf(des_vel, stance_time, seResult, pYawCorrected, v_des_world, leg);
+    if ( canPlace(Pf * 2.0, *points_, 0.01) )
+    {
+      // Точка приземления для ноги в мировой СК
+      footSwingTrajectories[leg].setFinalPosition(Pf);
+    }
+    else
+    {
+      std::cout << "Cant place " << std::endl;
+      if ( (std::abs(gamepadCommand.at(0)) < 0.1) ||
+           (std::abs(gamepadCommand.at(1)) < 0.1) ||
+           (std::abs(gamepadCommand.at(2)) < 0.1)  )
+      {
+        std::cout << "Stop " << std::endl;
+        break;
+      }
+      std::cout << "Decreasing body speed " << std::endl;
+      gamepadCommand.at(0) = gamepadCommand.at(0)/2.0;
+      gamepadCommand.at(1) = gamepadCommand.at(1)/2.0;
+      gamepadCommand.at(2) = gamepadCommand.at(2)/2.0;
 
-    // Точка приземления для ноги в мировой СК
-    footSwingTrajectories[leg].setFinalPosition(computePf(des_vel, stance_time, seResult, pYawCorrected, v_des_world, leg));
+      // Запускаем с обновленной скоростью
+      this->run(_quadruped,
+                _legController,
+                _stateEstimator,
+                _desiredStateCommand,
+                gamepadCommand,
+                gaitType, robotMode);
+      return;
+    }
+
 #ifdef DEBUG_PF
     if (leg == 1) {
       std::cout << "pf0 = " << (seResult.rBody*(Pf- seResult.position)).transpose() << " " << std::endl;
@@ -833,4 +862,39 @@ Vec3<float> ConvexMPCLocomotion::computePf(Vec3<float>& des_vel, float& stance_t
   Pf[1] += pfy_rel;
   Pf[2] = 0.0;
   return Pf;
+}
+
+
+double calcDistance(Vec3<float> const& p1, Vec3<double> const& p2)
+{
+  return sqrt(pow(p1.x() - p2.x(), 2) +
+              pow(p1.y() - p2.y(), 2) +
+              pow(p1.z() - p2.z(), 2)  );
+}
+
+const Eigen::Vector3d findClosestPoint(const Vec3<float>& point,
+                                       boost::circular_buffer<Eigen::Vector3d>& buffer)
+{
+  double dist = 9999;
+  double cur_dist = 0;
+  Eigen::Vector3d ans = buffer.front();
+  for (auto it:buffer)
+  {
+    cur_dist = calcDistance(point, it);
+    if (cur_dist < dist)
+    {
+      dist = cur_dist;
+      ans = it;
+    }
+  }
+  return ans;
+}
+
+bool canPlace(const Vec3<float>& point, boost::circular_buffer<Eigen::Vector3d>& buffer, double thresh)
+{
+  auto closest = findClosestPoint(point, buffer);
+//  std::cout << "distance = " << calcDistance(point, closest) << std::endl;
+  if (calcDistance(point, closest) >= thresh)
+    return true;
+  return false;
 }
