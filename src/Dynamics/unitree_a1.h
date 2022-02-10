@@ -20,14 +20,14 @@ Quadruped<T> buildUnitreeA1() {
   unitree_a1._hipGearRatio = 6;
   unitree_a1._kneeGearRatio = 9.33;
 
-  unitree_a1._abadLinkLength = 0.0838;
-  unitree_a1._hipLinkLength = 0.2;
+  unitree_a1._abadLinkLength = 0.0838;//+
+  unitree_a1._hipLinkLength = 0.2;//+
   //unitree_a1._kneeLinkLength = 0.175;
   //unitree_a1._maxLegLength = 0.384;
-  unitree_a1._kneeLinkY_offset = 0.004;
+  unitree_a1._kneeLinkY_offset = 0.0028;//+
   //unitree_a1._kneeLinkLength = 0.20;
-  unitree_a1._kneeLinkLength = 0.2;
-  unitree_a1._maxLegLength = 0.409;
+  unitree_a1._kneeLinkLength = 0.2;//+
+  unitree_a1._maxLegLength = 0.409;//+
 
 
   unitree_a1._motorTauMax = 3.f;

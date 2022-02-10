@@ -99,10 +99,14 @@ public:
   CMPC_Result<float> getCCMPCResult() {return result;}
   FootSwingTrajectory<float>* getFootTrajVect() {return footSwingTrajectories;}
   void setPfCorrection(float x, float y) {pf_add_x_=x; pf_add_y_=y;}
-  void setPointsBuffer(boost::circular_buffer<Eigen::Vector3d>* buffer){points_=buffer;}
+  void setPointsBuffer(std::shared_ptr<boost::circular_buffer<Eigen::Vector3d>>& buffer){points_=buffer;}
+  std::shared_ptr<boost::circular_buffer<Eigen::Vector3d>>& getPointsBuffer() {return points_;};
+  Vec3<float> computePf(Quadruped<float>& _quadruped,
+                        StateEstimatorContainer<float>& _stateEstimator,
+                        int leg);
 
   template<typename T>
-  void run(Quadruped<T> &_quadruped, LegController<T> &_legController, StateEstimatorContainer<float> &_stateEstimator,
+  bool run(Quadruped<T> &_quadruped, LegController<T> &_legController, StateEstimatorContainer<float> &_stateEstimator,
           DesiredStateCommand<T> &_desiredStateCommand, std::vector<double> gamepadCommand, int gaitType, int robotMode = 0);
   // void _SetupCommand(StateEstimatorContainer<float> &_stateEstimator, std::vector<double> gamepadCommand);
   bool currently_jumping = false;
@@ -147,10 +151,7 @@ private:
   void solveDenseMPC(int *mpcTable, StateEstimatorContainer<float> &_stateEstimator);
   void solveSparseMPC(int *mpcTable, StateEstimatorContainer<float> &_stateEstimator);
   void initSparseMPC();
-  Vec3<float> computePf(Vec3<float>& des_vel, float& stance_time,
-                        const StateEstimate<float>& seResult,
-                        Vec3<float>& pYawCorrected,
-                        Vec3<float>& v_des_world, int leg);
+  Gait* gait_;
   int iterationsBetweenMPC;  //15
   int horizonLength;    //10
   int default_iterations_between_mpc;
@@ -175,7 +176,7 @@ private:
   float pf_add_x_;
   float pf_add_y_;
   // Облако точек от сенсора глубины
-  boost::circular_buffer<Vec3<double>>* points_;
+  std::shared_ptr<boost::circular_buffer<Eigen::Vector3d>> points_;
 
 
   Vec3<float> world_position_desired;
@@ -197,8 +198,12 @@ private:
 
 double calcDistance(Vec3<float> const& p1, Vec3<float> const& p2);
 
+double calcDistanceXY(Vec3<float> const& p1, Vec3<double> const& p2);
+
 const Eigen::Vector3d findClosestPoint(const Vec3<float>& point,
                                        boost::circular_buffer<Eigen::Vector3d>& buffer);
+Vec3<float> findClosestPointThreshold(const Vec3<float>& point,
+                                       boost::circular_buffer<Eigen::Vector3d>& buffer, double threshold);
 
 bool canPlace(const Vec3<float>& point, boost::circular_buffer<Eigen::Vector3d>& buffer, double thresh);
 

@@ -230,6 +230,7 @@ float MixedFrequncyGait::getCurrentGaitPhase() {
   return 0;
 }
 
+// Расчет времени ноги в фазе полета
 float OffsetDurationGait::getCurrentSwingTime(float dtMPC, int leg) {
   (void)leg;
   // return dtMPC * _swing;

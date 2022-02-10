@@ -63,7 +63,7 @@ class GaitCtrller {
   void PreWork(VectorNavData& imuData, LegData& motorData);
   void SetGaitType(int gaitType);
   void SetRobotMode(int mode);
-  void SetRobotVel(double& x, double&y, double& z);
+  void SetRobotVel(double x, double y, double z);
   void SetLegParams(PDcoeffs coefs);
 //  void TorqueCalculator(double* imuData, double* motorData, double* effort);
   void jump(bool trigger);
@@ -71,6 +71,8 @@ class GaitCtrller {
   Eigen::VectorXd TorqueCalculator(VectorNavData& imuData, LegData& motorData);
   void publushDebugToRos(VectorNavData& imu, LegData& legData);
   std::shared_ptr<ConvexMPCLocomotion> getConvexMpcPtr() {return convexMPC;}
+
+  Vec3<float> Pf_;
 
  private:
   int _gaitType = 0;
@@ -83,14 +85,15 @@ class GaitCtrller {
   FloatingBaseModel<float> _model;
   std::shared_ptr<ConvexMPCLocomotion> convexMPC;
   std::unique_ptr<LegController<float>> _legController;
+  std::unique_ptr<RobotControlParameters> controlParameters;
+  std::unique_ptr<CheaterState<double>> cheaterState;
   std::unique_ptr<StateEstimatorContainer<float>> _stateEstimator;
   LegData _legdata;
   LegCommand legcommand;
   ControlFSMData<float> control_data;
   VectorNavData _vectorNavData;
-  std::unique_ptr<CheaterState<double>> cheaterState;
+
   StateEstimate<float> _stateEstimate;
-  std::unique_ptr<RobotControlParameters> controlParameters;
   std::unique_ptr<DesiredStateCommand<float>> _desiredStateCommand;
   std::unique_ptr<SafetyChecker<float>> safetyChecker;
   quadruped_msgs::generalConfig config_;

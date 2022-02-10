@@ -140,10 +140,10 @@ void ConvexMPCLocomotion::_SetupCommand(StateEstimatorContainer<float>& _stateEs
 }
 
 template <>
-void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
+bool ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
                               LegController<float>& _legController,
                               StateEstimatorContainer<float>& _stateEstimator,
-                              DesiredStateCommand<float>& _desiredStateCommand,
+                              DesiredStateCommand<float>& /*_desiredStateCommand*/,
                               std::vector<double> gamepadCommand,
                               int gaitType, int robotMode) {
   bool omniMode = false;
@@ -173,60 +173,60 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
   }
 
   // pick gait
-  Gait* gait = &trotting;
+  gait_ = &trotting;
   if(robotMode == 0)
   {
     if (gaitNumber == 1)
-      gait = &bounding;
+      gait_ = &bounding;
     else if (gaitNumber == 2)
-      gait = &pronking;
+      gait_ = &pronking;
     // else if(gaitNumber == 3)
-    //   gait = &random;
+    //   gait_ = &random;
     else if (gaitNumber == 4)
-      gait = &standing;
+      gait_ = &standing;
     else if (gaitNumber == 5)
-      gait = &trotRunning;
+      gait_ = &trotRunning;
     // else if(gaitNumber == 6)
-    //   gait = &random2;
+    //   gait_ = &random2;
     else if (gaitNumber == 7)
-      gait = &galloping;
+      gait_ = &galloping;
     else if (gaitNumber == 8)
-      gait = &pacing;
+      gait_ = &pacing;
     else if (gaitNumber == 9)
-      gait = &trotting;
+      gait_ = &trotting;
     else if (gaitNumber == 10)
-      gait = &walking;
+      gait_ = &walking;
     else if (gaitNumber == 11)
-      gait = &walking2;
+      gait_ = &walking2;
   }
   // "Плаваная ходьба" от китайцев
   else if(robotMode == 1)
   {
     int h = 10;
     double vBody = sqrt(_x_vel_des*_x_vel_des)+(_y_vel_des*_y_vel_des);
-    gait = &aio;
+    gait_ = &aio;
     gaitNumber = 9;  // Trotting
-    if(gait->getCurrentGaitPhase() == 0)
+    if(gait_->getCurrentGaitPhase() == 0)
     {
       if(vBody < 0.002)
       {
         if(abs(_yaw_turn_rate) < 0.01)
         {
           gaitNumber = 4;  // Standing
-          if(gait->getGaitHorizon() != h)
+          if(gait_->getGaitHorizon() != h)
           {
             iterationCounter = 0;
           }
-          gait->setGaitParam(h, Vec4<int>(0, 0, 0, 0), Vec4<int>(h, h, h, h), "Standing");
+          gait_->setGaitParam(h, Vec4<int>(0, 0, 0, 0), Vec4<int>(h, h, h, h), "Standing");
         }
         else
         {
           h = 10;
-          if(gait->getGaitHorizon() != h)
+          if(gait_->getGaitHorizon() != h)
           {
             iterationCounter = 0;
           }
-          gait->setGaitParam(h, Vec4<int>(0, h / 2, h / 2, 0),
+          gait_->setGaitParam(h, Vec4<int>(0, h / 2, h / 2, 0),
                              Vec4<int>(h / 2, h / 2, h / 2, h / 2), "trotting");
         }
       }
@@ -234,32 +234,32 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
         if(vBody <= 0.2)
         {
           h = 16;
-          if(gait->getGaitHorizon() != h)
+          if(gait_->getGaitHorizon() != h)
           {
             iterationCounter = 0;
           }
-          gait->setGaitParam(h,
+          gait_->setGaitParam(h,
                              Vec4<int>(0, 1 * h / 2, 1 * h / 4, 3 * h / 4),
                              Vec4<int>(3 * h / 4, 3 * h / 4, 3 * h / 4, 3 * h / 4), "Walking");
         }
         else if(vBody > 0.2 && vBody <= 0.4)
         {
           h = 16;
-          if(gait->getGaitHorizon() != h)
+          if(gait_->getGaitHorizon() != h)
           {
             iterationCounter = 0;
           }
-          gait->setGaitParam(h,
+          gait_->setGaitParam(h,
                              Vec4<int>(0, 1 * h / 2, h*((5.0/4.0)*vBody), h*((5.0/4.0)*vBody+(1.0/2.0))),
                              Vec4<int>(h*((-5.0/4.0)*vBody+1.0), h*((-5.0/4.0)*vBody+1.0),
                                        h*((-5.0/4.0)*vBody+1.0), h*((-5.0/4.0)*vBody+1.0)), "Walking2trotting");
         } else if(vBody > 0.4 && vBody <= 1.4)
         {
           h = 14;
-          if(gait->getGaitHorizon() != h) {
+          if(gait_->getGaitHorizon() != h) {
             iterationCounter = 0;
           }
-          gait->setGaitParam(h, Vec4<int>(0, h / 2, h / 2, 0),
+          gait_->setGaitParam(h, Vec4<int>(0, h / 2, h / 2, 0),
                              Vec4<int>(h / 2, h / 2, h / 2, h / 2), "trotting");
         }
         else
@@ -267,11 +267,11 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
           // h = 10;
           h = -20.0*vBody+42.0;
           if(h < 10) h = 10;
-          if(gait->getGaitHorizon() != h)
+          if(gait_->getGaitHorizon() != h)
           {
             iterationCounter = 0;
           }
-          gait->setGaitParam(h, Vec4<int>(0, h / 2, h / 2, 0),
+          gait_->setGaitParam(h, Vec4<int>(0, h / 2, h / 2, 0),
                              Vec4<int>(h / 2, h / 2, h / 2, h / 2), "trotting");
 
           std::cout << vBody << " " << h << " " << h / 2 << std::endl;
@@ -286,7 +286,7 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
 
   current_gait = gaitNumber;
   // Установка числа итераций походки
-  gait->setIterations(iterationsBetweenMPC, iterationCounter);
+  gait_->setIterations(iterationsBetweenMPC, iterationCounter);
 
   // integrate position setpoint
   // Требуемая линейная скорость в системе координат тела
@@ -326,7 +326,7 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
   }
 
   // Для походок расчет желаемых координат интегрированием скорости
-  if (gait != &standing)
+  if (gait_ != &standing)
   {
     world_position_desired +=
         dt * Vec3<float>(v_des_world[0], v_des_world[1], 0);
@@ -350,15 +350,12 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
 
   // foot placement
   for (int leg = 0; leg < 4; leg++) {
-    swingTimes[leg] = gait->getCurrentSwingTime( dtMPC, leg);
+    swingTimes[leg] = gait_->getCurrentSwingTime( dtMPC, leg);
   }
 
-  float side_sign[4] = {-1, 1, -1, 1};
-  float interleave_y[4] = {-0.08, 0.08, 0.02, -0.02};
   // float interleave_gain = -0.13;
-  float interleave_gain = -0.2;
   // float v_abs = std::fabs(seResult.vBody[0]);
-  float v_abs = std::fabs(v_des_robot[0]);
+
   for (int leg = 0; leg < 4; leg++) {
     if (firstSwing[leg])
     {
@@ -369,57 +366,62 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
       swingTimeRemaining[leg] -= dt;
     }
 
+//    std::cout << " Stay on ground " << swingTimeRemaining[0] <<
+//                 " bool " <<(swingTimeRemaining[0] <= 1e-5) << std::endl;
+
     footSwingTrajectories[leg].setHeight(step_height_);
-    Vec3<float> offset(0, side_sign[leg] * _quadruped._abadLinkLength, 0);
 
-    // [китайский] Получить координаты hip в системе координат тела
-    Vec3<float> pRobotFrame = (_quadruped.getHipLocation(leg) +
-                               offset);
-    pRobotFrame[1] += interleave_y[leg] * v_abs * interleave_gain;
-    float stance_time =
-        gait->getCurrentStanceTime(dtMPC, leg);
-
-    // [китайский] При вращении пересчитываются координаты hip в системе координат тела
-    Vec3<float> pYawCorrected =
-        coordinateRotation(CoordinateAxis::Z,
-                           -_yaw_turn_rate * stance_time / 2) * pRobotFrame;
-
-    Vec3<float> des_vel;
-    des_vel[0] = _x_vel_des;
-    des_vel[1] = _y_vel_des;
-    des_vel[2] = 0.0;
 
     // Расчет координат точки приземления лапы
-    auto Pf = computePf(des_vel, stance_time, seResult, pYawCorrected, v_des_world, leg);
-    if ( canPlace(Pf * 2.0, *points_, 0.01) )
+    auto Pf = computePf(_quadruped,_stateEstimator, leg);
+    auto Pf_from_buffer = findClosestPointThreshold(Pf, *points_, -1.0);
+    if (points_->size() == points_->capacity())
     {
-      // Точка приземления для ноги в мировой СК
-      footSwingTrajectories[leg].setFinalPosition(Pf);
+      std::cout << "CUSTOM FOOTSTEP" << std::endl;
+      footSwingTrajectories[leg].setFinalPosition(Pf_from_buffer);
     }
     else
-    {
-      std::cout << "Cant place " << std::endl;
-      if ( (std::abs(gamepadCommand.at(0)) < 0.1) ||
-           (std::abs(gamepadCommand.at(1)) < 0.1) ||
-           (std::abs(gamepadCommand.at(2)) < 0.1)  )
-      {
-        std::cout << "Stop " << std::endl;
-        break;
-      }
-      std::cout << "Decreasing body speed " << std::endl;
-      gamepadCommand.at(0) = gamepadCommand.at(0)/2.0;
-      gamepadCommand.at(1) = gamepadCommand.at(1)/2.0;
-      gamepadCommand.at(2) = gamepadCommand.at(2)/2.0;
+      footSwingTrajectories[leg].setFinalPosition(Pf);
+//    if (Pf_from_buffer.isZero())
+//      footSwingTrajectories[leg].setFinalPosition(Pf);
+//    else
+//    {
+//      std::cout << "CUSTOM FOOTSTEP" << std::endl;
+//      footSwingTrajectories[leg].setFinalPosition(Pf_from_buffer);
+//    }
+//    if ( canPlace(Pf, *points_, 0.01) )
+//    {
+//      // Точка приземления для ноги в мировой СК
+//      footSwingTrajectories[leg].setFinalPosition(Pf);
+//    }
+//    else
+//    {
+//      std::cout << "Cant place " << std::endl;
+//      // Выход из рекурсии если все скорости малы
+//      if ( (std::abs(gamepadCommand.at(0)) < 0.1) &&
+//           (std::abs(gamepadCommand.at(1)) < 0.1) &&
+//           (std::abs(gamepadCommand.at(2)) < 0.1)  )
+//      {
+//        std::cout << "Ignore points  " << std::endl;
+//        break;
+//      }
+//      std::cout << "Decreasing body speed " << std::endl;
+//      gamepadCommand.at(0) = 0;
+//      gamepadCommand.at(1) = 0;
+//      gamepadCommand.at(2) = 0;
+//      gamepadCommand.at(0) = gamepadCommand.at(0)/2.0;
+//      gamepadCommand.at(1) = gamepadCommand.at(1)/2.0;
+//      gamepadCommand.at(2) = gamepadCommand.at(2)/2.0;
 
-      // Запускаем с обновленной скоростью
-      this->run(_quadruped,
-                _legController,
-                _stateEstimator,
-                _desiredStateCommand,
-                gamepadCommand,
-                gaitType, robotMode);
-      return;
-    }
+//      // Запускаем с обновленной скоростью
+//      this->run(_quadruped,
+//                _legController,
+//                _stateEstimator,
+//                _desiredStateCommand,
+//                gamepadCommand,
+//                gaitType, robotMode);
+//      return false;
+//    }
 
 #ifdef DEBUG_PF
     if (leg == 1) {
@@ -436,9 +438,9 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
   // calc gait
   iterationCounter++;
 
-  Vec4<float> contactStates = gait->getContactState();
-  Vec4<float> swingStates = gait->getSwingState();
-  int* mpcTable = gait->getMpcTable();
+  Vec4<float> contactStates = gait_->getContactState();
+  Vec4<float> swingStates = gait_->getSwingState();
+  int* mpcTable = gait_->getMpcTable();
   updateMPCIfNeeded(mpcTable, _stateEstimator, omniMode);
 
   //  StateEstimator* se = hw_i->state_estimator;
@@ -546,9 +548,10 @@ void ConvexMPCLocomotion::run(Quadruped<float>& _quadruped,
   vBody_Ori_des[1] = 0.;
   vBody_Ori_des[2] = _yaw_turn_rate;
 
-  // contact_state = gait->getContactState();
-  contact_state = gait->getContactState();
+  // contact_state = gait_->getContactState();
+  contact_state = gait_->getContactState();
   // END of WBC Update
+  return true;
 }
 
 void ConvexMPCLocomotion::updateMPCIfNeeded(
@@ -835,11 +838,35 @@ void ConvexMPCLocomotion::setTrotDuration(int d)
 }
 
 
-Vec3<float> ConvexMPCLocomotion::computePf(Vec3<float>& des_vel, float& stance_time,
-                                           const StateEstimate<float>& seResult,
-                                           Vec3<float>& pYawCorrected,
-                                           Vec3<float>& v_des_world, int leg)
+Vec3<float> ConvexMPCLocomotion::computePf(Quadruped<float>& _quadruped,
+                                           StateEstimatorContainer<float>& _stateEstimator,
+                                           int leg)
 {
+  if (!gait_)
+    return Vec3<float>(0,0,0);
+  auto& seResult = _stateEstimator.getResult();
+
+  Vec3<float> des_vel(_x_vel_des, _y_vel_des, .0);
+  Vec3<float> v_des_world = seResult.rBody.transpose() * des_vel; // omnimode == false
+
+  static float side_sign[4] = {-1, 1, -1, 1};
+  static float interleave_y[4] = {-0.08, 0.08, 0.02, -0.02}; // Что это???
+  static float interleave_gain = -0.2;
+  float v_abs = std::fabs(des_vel[0]);
+
+  Vec3<float> offset(0, side_sign[leg] * _quadruped._abadLinkLength, 0);
+
+  // [китайский] Получить координаты hip в системе координат тела
+  Vec3<float> pRobotFrame = (_quadruped.getHipLocation(leg) + offset);
+  pRobotFrame[1] += interleave_y[leg] * v_abs * interleave_gain;
+
+  float stance_time = gait_->getCurrentStanceTime(dtMPC, leg);
+
+  // [китайский] При вращении пересчитываются координаты hip в системе координат тела
+  Vec3<float> pYawCorrected =
+      coordinateRotation(CoordinateAxis::Z,
+                         -_yaw_turn_rate * stance_time / 2) * pRobotFrame;
+
   // [китайский] Координаты бедра в мировой системе координат оцениваются по равномерному
   // движению тела на оставшемся промежутке времени
   Vec3<float> Pf = seResult.position + seResult.rBody.transpose() *
@@ -867,9 +894,17 @@ Vec3<float> ConvexMPCLocomotion::computePf(Vec3<float>& des_vel, float& stance_t
 
 double calcDistance(Vec3<float> const& p1, Vec3<double> const& p2)
 {
+  double out = sqrt(pow(p1.x() - p2.x(), 2) +
+                    pow(p1.y() - p2.y(), 2) +
+                    pow(p1.z() - p2.z(), 2)  );
+  return out;
+}
+
+
+double calcDistanceXY(Vec3<float> const& p1, Vec3<double> const& p2)
+{
   return sqrt(pow(p1.x() - p2.x(), 2) +
-              pow(p1.y() - p2.y(), 2) +
-              pow(p1.z() - p2.z(), 2)  );
+              pow(p1.y() - p2.y(), 2) );
 }
 
 const Eigen::Vector3d findClosestPoint(const Vec3<float>& point,
@@ -890,11 +925,42 @@ const Eigen::Vector3d findClosestPoint(const Vec3<float>& point,
   return ans;
 }
 
+
+Vec3<float> findClosestPointThreshold(const Vec3<float>& point,
+                                       boost::circular_buffer<Eigen::Vector3d>& buffer, double threshold)
+{
+  double dist = 9999;
+  double cur_dist = 0;
+  Eigen::Vector3d ans = buffer.front();
+  for (auto it:buffer)
+  {
+    cur_dist = calcDistanceXY(point, it);
+    if (cur_dist < dist)
+    {
+      dist = cur_dist;
+      ans = it;
+    }
+  }
+//  std::cout << "DIST " << dist << std::endl;
+  if (threshold == -1.0)
+  {
+    ans.z() = point.z();
+    return ans.cast<float>();
+  }
+  if (dist <= threshold)
+  {
+    ans.z() = point.z();
+    return ans.cast<float>();
+  }
+  else
+    return point;
+}
+
 bool canPlace(const Vec3<float>& point, boost::circular_buffer<Eigen::Vector3d>& buffer, double thresh)
 {
   auto closest = findClosestPoint(point, buffer);
-//  std::cout << "distance = " << calcDistance(point, closest) << std::endl;
-  if (calcDistance(point, closest) >= thresh)
+  std::cout << "distance = " << calcDistance(point, closest) << std::endl;
+  if (calcDistance(point, closest) <= thresh)
     return true;
   return false;
 }

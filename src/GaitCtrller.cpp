@@ -2,15 +2,14 @@
 
 GaitCtrller::GaitCtrller(double freq, std::vector<float> ctrlParam)
   : ctrlParam(ctrlParam)
-  , _quadruped{ buildUnitreeA1<float>() }
+  , _quadruped( buildUnitreeA1<float>() )
   , _model{ _quadruped.buildModel() }
-  , convexMPC{ std::make_unique<ConvexMPCLocomotion>(1.0 / freq, 27 / (1000. / freq) ) }
-  , _legController{ std::make_unique<LegController<float>>(_quadruped) }
-  , _stateEstimator{ std::make_unique<StateEstimatorContainer<float>>(
-        cheaterState.get(), &_vectorNavData, _legController->datas, &_stateEstimate,
-        controlParameters.get()) }
-  , _desiredStateCommand{ std::make_unique<DesiredStateCommand<float>>(1.0 / freq) }
-  , safetyChecker{ std::make_unique<SafetyChecker<float>>() }
+  , convexMPC{ std::make_shared<ConvexMPCLocomotion>(1.0 / freq, 27 / (1000. / freq) ) }
+  , _legController( std::make_unique<LegController<float>>(_quadruped) )
+  , _stateEstimator( std::make_unique<StateEstimatorContainer<float>>(cheaterState.get(), &_vectorNavData, _legController->datas, &_stateEstimate,
+                                                                      controlParameters.get()) )
+  , _desiredStateCommand( std::make_unique<DesiredStateCommand<float>>(1.0 / freq) )
+  , safetyChecker( std::make_unique<SafetyChecker<float>>() )
 {
   _gamepadCommand.resize(4);
 
@@ -66,13 +65,13 @@ void GaitCtrller::SetLegData(double* motorData) {
 void GaitCtrller::PreWork(VectorNavData& imuData, LegData& motorData) {
   _vectorNavData = imuData;
   // Меняю направления сочленений для unitree a1
-//  for (int leg = 0; leg < 4; leg++)
-//  {
-//    motorData.q_hip[leg] = -motorData.q_hip[leg]; // hip
-//    motorData.q_knee[leg] = -motorData.q_knee[leg]; // knee
-//    motorData.qd_hip[leg] = -motorData.qd_hip[leg]; // hip
-//    motorData.qd_knee[leg] = -motorData.qd_knee[leg]; // knee
-//  }
+  //  for (int leg = 0; leg < 4; leg++)
+  //  {
+  //    motorData.q_hip[leg] = -motorData.q_hip[leg]; // hip
+  //    motorData.q_knee[leg] = -motorData.q_knee[leg]; // knee
+  //    motorData.qd_hip[leg] = -motorData.qd_hip[leg]; // hip
+  //    motorData.qd_knee[leg] = -motorData.qd_knee[leg]; // knee
+  //  }
   publushDebugToRos(_vectorNavData, _legdata);
   _legdata = motorData;
   _stateEstimator->run();
@@ -89,7 +88,7 @@ void GaitCtrller::SetRobotMode(int mode) {
   std::cout << "set robot mode to: " << _robotMode << std::endl;
 }
 
-void GaitCtrller::SetRobotVel(double& x, double&y, double& z) {
+void GaitCtrller::SetRobotVel(double x, double y, double z) {
   if (abs(x) < 0.03) {
     _gamepadCommand[0] = 0.0;
   } else {
@@ -105,17 +104,37 @@ void GaitCtrller::SetRobotVel(double& x, double&y, double& z) {
   if (abs(z) < 0.03) {
     _gamepadCommand[2] = 0.0;
   } else {
-  _gamepadCommand[2] = z * 1.0;
+    _gamepadCommand[2] = z * 1.0;
   }
 }
 
-Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& motorData) {
+Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& motorData)
+{
   PreWork(imuData, motorData);
+
+//    std::cout << "buffer size = " << convexMPC->getPointsBuffer()->size() << std::endl;
+
+//  if (convexMPC->getPointsBuffer()->size() >= 5000)
+//  {
+    for (int leg = 0; leg < 1; leg++)
+    {
+      Pf_ = convexMPC->computePf(_quadruped,*_stateEstimator, leg);
+      Pf_.z() = convexMPC->getPointsBuffer()->front().z();
+//      if ( !canPlace(Pf_, *convexMPC->getPointsBuffer(), 0.01) )
+//      {
+//        //      std::cout << "STOP ROBOT" << std::endl;
+//        SetRobotVel(_gamepadCommand[0]/2.0,
+//            _gamepadCommand[1]/2.0,
+//            _gamepadCommand[2]/2.0);
+//      }
+    }
+//  }
+
 
   // Setup the leg controller for a new iteration
   _legController->zeroCommand();
   _legController->setEnabled(true);
-//  _legController->setMaxTorqueCheetah3(208.5);
+  //  _legController->setMaxTorqueCheetah3(208.5);
 
   // Find the desired state trajectory
   _desiredStateCommand->convertToStateCommands(_gamepadCommand);
@@ -135,14 +154,24 @@ Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& m
     std::cout << "broken: Force FeedForward Safety Check FAIL" << std::endl;
 
   }else if (!safetyChecker->checkJointLimit(*_legController)) {
-//    _safetyCheck = false;
+    //    _safetyCheck = false;
     ROS_WARN_STREAM_ONCE(ros::this_node::getName() + " : IGNORED JOINT LIMIT CHECK!!!");
-//    ROS_ERROR_STREAM_ONCE("broken: Joint Limit Safety Check FAIL");
-//    std::cout << "broken: Joint Limit Safety Check FAIL" << std::endl;
+    //    ROS_ERROR_STREAM_ONCE("broken: Joint Limit Safety Check FAIL");
+    //    std::cout << "broken: Joint Limit Safety Check FAIL" << std::endl;
   }
+
 
   convexMPC->run(_quadruped, *_legController, *_stateEstimator,
                  *_desiredStateCommand, _gamepadCommand, _gaitType, _robotMode);
+  // Если не получается поставить ногу, останавливаемся
+  //  if ( !convexMPC->run(_quadruped, *_legController, *_stateEstimator,
+  //                 *_desiredStateCommand, _gamepadCommand, _gaitType, _robotMode) )
+  //  {
+  //    std::fill(_gamepadCommand.begin(), _gamepadCommand.end(),0.0);
+  //    _legController->zeroCommand();
+  //    convexMPC->run(_quadruped, *_legController, *_stateEstimator,
+  //                     *_desiredStateCommand, _gamepadCommand, _gaitType, _robotMode);
+  //  }
 
   _legController->updateCommand(&legcommand);
 
@@ -162,7 +191,7 @@ Eigen::VectorXd GaitCtrller::TorqueCalculator(VectorNavData& imuData, LegData& m
     }
   }
 
-   return effort;
+  return effort;
 }
 
 //void GaitCtrller::TorqueCalculator(double* imuData, double* motorData,
@@ -236,7 +265,7 @@ void GaitCtrller::SetLegParams(PDcoeffs coefs)
 void GaitCtrller::updateConfig(quadruped_msgs::generalConfig& cfg)
 {
   // Сброс параметров ног
-//    _legController->zeroCommand();
+  //    _legController->zeroCommand();
 
   config_ = cfg;
   // Коэффициенты для ног
@@ -245,30 +274,30 @@ void GaitCtrller::updateConfig(quadruped_msgs::generalConfig& cfg)
   Mat3<float> kpJ;
   Mat3<float> kdJ;
   kp <<   config_.kp_cartesian_x, 0, 0,
-          0, config_.kp_cartesian_y, 0,
-          0, 0, config_.kp_cartesian_z;
+      0, config_.kp_cartesian_y, 0,
+      0, 0, config_.kp_cartesian_z;
   kd <<   config_.kd_cartesian_x, 0, 0,
-          0, config_.kd_cartesian_y, 0,
-          0, 0, config_.kd_cartesian_z;
+      0, config_.kd_cartesian_y, 0,
+      0, 0, config_.kd_cartesian_z;
 
   // Коэффициенты для сочленений
   for (size_t leg = 0; leg < 4; leg++)
   {
     kpJ <<
-        config_.kp_joint_abad, 0, 0,
+           config_.kp_joint_abad, 0, 0,
         0, config_.kp_joint_hip, 0,
         0, 0, config_.kp_joint_knee;
     kdJ <<
-        config_.kd_joint_abad, 0, 0,
+           config_.kd_joint_abad, 0, 0,
         0, config_.kd_joint_hip, 0,
         0, 0, config_.kd_joint_knee;
   }
-    convexMPC->setPDcoefs(kp, kd, kpJ, kdJ);
+  convexMPC->setPDcoefs(kp, kd, kpJ, kdJ);
 
-//  // Установить походку
+  //  // Установить походку
   this->SetGaitType(cfg.gait);
 
-    // Изменение горизонта планирования
+  // Изменение горизонта планирования
   convexMPC->setHorizon(cfg.horizon_length);
 
   // Задать период шага
@@ -277,11 +306,11 @@ void GaitCtrller::updateConfig(quadruped_msgs::generalConfig& cfg)
   // Регулирование высоты шага
   convexMPC->setStepHeight(cfg.step_height);
 
-//  convexMPC->setBodyHeight(float(cfg.body_height), "default");
-//  convexMPC->setBodyHeight(float(cfg.body_height_run), "run");
-//  convexMPC->setBodyHeight(float(cfg.body_height_jump), "jump");
+  //  convexMPC->setBodyHeight(float(cfg.body_height), "default");
+  //  convexMPC->setBodyHeight(float(cfg.body_height_run), "run");
+  //  convexMPC->setBodyHeight(float(cfg.body_height_jump), "jump");
 
-   // "Плавная" походка
+  // "Плавная" походка
   this->SetRobotMode(cfg.walk_mode);
 }
 
